@@ -1,0 +1,29 @@
+@import "tailwindcss";
+/* Dark mode styles */
+.dark {
+    --bg-color: #1a202c;
+    --text-color: #f7fafc;
+    --sidebar-bg: #2d3748;
+    --card-bg: #2d3748;
+}
+
+/* Light mode styles */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #1a202c;
+    --sidebar-bg: #f8f9fa;
+    --card-bg: #ffffff;
+}
+
+/* Apply these variables to your elements */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Add dark mode classes for other components as needed */
+.dark .some-element {
+    background-color: #2d3748;
+    color: #f7fafc;
+}
