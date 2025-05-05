@@ -95,32 +95,48 @@ const Projects = () => {
 
   const handleAddProject = async (e) => {
     e.preventDefault();
-
+  
     const query = `
       mutation AddProject($projectInput: ProjectInput!) {
         addProject(projectInput: $projectInput) {
           id
           title
+          description
+          students
+          category
+          startDate
+          endDate
+          status
         }
       }
     `;
-
+  
     const variables = { projectInput: formData };
-
+  
     try {
       const response = await fetch("http://localhost:4000/graphql", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, variables }),
       });
-
+  
       const result = await response.json();
       if (result.errors) {
         alert(result.errors[0].message);
         return;
       }
-
-      setProjects([...projects, result.data.addProject]);
+  
+      const newProject = result.data.addProject;
+  
+      if (isStudent) {
+        // Only add if the student is assigned to the project
+        if (newProject.students.includes(currentUsername)) {
+          setProjects([...projects, newProject]);
+        }
+      } else {
+        setProjects([...projects, newProject]);
+      }
+  
       setFormData({
         title: "",
         description: "",
@@ -136,6 +152,7 @@ const Projects = () => {
       alert("Error adding project.");
     }
   };
+  
 
   const filteredProjects = projects.filter((project) => {
     const matchSearch =
