@@ -11,28 +11,56 @@ const SignUp = () => {
   const [universityId, setUniversityId] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (isStudent && !universityId) {
       alert("Please enter your University ID");
       return;
     }
-
-    const userData = {
-      email,
-      username,
-      password,
-      isStudent,
-      universityId: isStudent ? universityId : null,
+  
+    const query = `
+      mutation SignUp($userInput: SignUpInput!) {
+        signUp(userInput: $userInput) {
+          id
+          email
+          username
+        }
+      }
+    `;
+  
+    const variables = {
+      userInput: {
+        email,
+        username,
+        password,
+        isStudent,
+        universityId: isStudent ? universityId : null,
+      },
     };
-
-    // Store signup data in localStorage
-    const existingData = JSON.parse(localStorage.getItem("signUpData")) || [];
-    localStorage.setItem("signUpData", JSON.stringify([...existingData, userData]));
-
-    navigate("/login");
+  
+    try {
+      const response = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+      });
+  
+      const result = await response.json();
+  
+      if (result.errors) {
+        alert(result.errors[0].message);
+        return;
+      }
+  
+      // Signup success — optionally store user, redirect
+      navigate("/login");
+    }  catch (err) {
+      console.error("Signup error:", err);
+      alert("Signup failed: " + err.message);
+    }
   };
+  
 
   return (
     <div className={`flex items-center justify-center min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} px-4 sm:px-6 lg:px-8`}>

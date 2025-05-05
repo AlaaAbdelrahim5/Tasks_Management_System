@@ -5,11 +5,14 @@ import { ThemeContext } from "../App";
 
 const Projects = () => {
   const { darkMode } = useContext(ThemeContext);
+
   const [projects, setProjects] = useState([]);
+  const [studentList, setStudentList] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [selectedProject, setSelectedProject] = useState(null);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -20,9 +23,64 @@ const Projects = () => {
     status: "In Progress",
   });
 
+  const user = JSON.parse(localStorage.getItem("user"));
+  const currentUsername = user?.username;
+  const isStudent = user?.isStudent;
+
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("projects")) || [];
-    setProjects(data);
+    fetch("http://localhost:4000/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `
+          query {
+            getStudents {
+              username
+              email
+            }
+          }
+        `,
+      }),
+    })
+      .then((res) => res.json())
+      .then((result) => setStudentList(result.data.getStudents || []))
+      .catch((err) => console.error("Failed to load students", err));
+  }, []);
+
+  useEffect(() => {
+    fetch("http://localhost:4000/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `
+          query {
+            getProjects {
+              id
+              title
+              description
+              students
+              category
+              startDate
+              endDate
+              status
+            }
+          }
+        `,
+      }),
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        const allProjects = result.data.getProjects;
+        if (isStudent) {
+          const filtered = allProjects.filter(p =>
+            p.students.includes(currentUsername)
+          );
+          setProjects(filtered);
+        } else {
+          setProjects(allProjects);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch projects", err));
   }, []);
 
   const handleInputChange = (e) => {
@@ -35,32 +93,48 @@ const Projects = () => {
     }
   };
 
-  const handleAddProject = (e) => {
+  const handleAddProject = async (e) => {
     e.preventDefault();
-    // const progress = calculateProgress(formData.startDate, formData.endDate);
-    // const newProject = { ...formData, progress };
-    // const updatedProjects = [...projects, newProject];
-    // setProjects(updatedProjects);
-    // localStorage.setItem("projects", JSON.stringify(updatedProjects));
-    // setFormData({
-    //   title: "",
-    //   description: "",
-    //   students: [],
-    //   category: "",
-    //   startDate: "",
-    //   endDate: "",
-    //   status: "In Progress",
-    // });
-    setShowForm(false);
-  };
 
-  const calculateProgress = (start, end) => {
-    const now = new Date();
-    const s = new Date(start);
-    const e = new Date(end);
-    if (now < s) return 0;
-    if (now > e) return 100;
-    return Math.floor(((now - s) / (e - s)) * 100);
+    const query = `
+      mutation AddProject($projectInput: ProjectInput!) {
+        addProject(projectInput: $projectInput) {
+          id
+          title
+        }
+      }
+    `;
+
+    const variables = { projectInput: formData };
+
+    try {
+      const response = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      const result = await response.json();
+      if (result.errors) {
+        alert(result.errors[0].message);
+        return;
+      }
+
+      setProjects([...projects, result.data.addProject]);
+      setFormData({
+        title: "",
+        description: "",
+        students: [],
+        category: "",
+        startDate: "",
+        endDate: "",
+        status: "In Progress",
+      });
+      setShowForm(false);
+    } catch (err) {
+      console.error("Failed to add project:", err);
+      alert("Error adding project.");
+    }
   };
 
   const filteredProjects = projects.filter((project) => {
@@ -76,45 +150,48 @@ const Projects = () => {
     <div className={`py-16 min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <div className="m-4">
         <h2 className={`text-2xl pb-4 font-bold ${darkMode ? 'text-blue-400' : 'text-blue-800'}`}>
-          Projects Overview
+          {isStudent ? "Your Projects" : "All Projects"}
         </h2>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <button
-            className={`px-4 py-2 rounded hover:bg-blue-700 ${
-              darkMode ? 'bg-blue-600 text-white' : 'bg-blue-800 text-white'
-            }`}
-            onClick={() => setShowForm(true)}
-          >
-            Add New Project
-          </button>
-          <input
-            type="text"
-            placeholder="Search projects by title or description..."
-            className={`px-3 py-2 rounded flex-grow ${
-              darkMode 
-                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                : 'border border-gray-400 text-gray-800 placeholder-gray-600'
-            }`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className={`px-3 py-2 rounded ${
-              darkMode 
-                ? 'bg-gray-700 border-gray-600 text-white' 
-                : 'border border-gray-400 text-gray-800'
-            }`}
-          >
-            <option>All Status</option>
-            <option>In Progress</option>
-            <option>Completed</option>
-            <option>Pending</option>
-            <option>On Hold</option>
-            <option>Cancelled</option>
-          </select>
-        </div>
+
+        {!isStudent && (
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              className={`px-4 py-2 rounded hover:bg-blue-700 ${
+                darkMode ? 'bg-blue-600 text-white' : 'bg-blue-800 text-white'
+              }`}
+              onClick={() => setShowForm(true)}
+            >
+              Add New Project
+            </button>
+            <input
+              type="text"
+              placeholder="Search projects by title or description..."
+              className={`px-3 py-2 rounded flex-grow ${
+                darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'border border-gray-400 text-gray-800 placeholder-gray-600'
+              }`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className={`px-3 py-2 rounded ${
+                darkMode
+                  ? 'bg-gray-700 border-gray-600 text-white'
+                  : 'border border-gray-400 text-gray-800'
+              }`}
+            >
+              <option>All Status</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+              <option>Pending</option>
+              <option>On Hold</option>
+              <option>Cancelled</option>
+            </select>
+          </div>
+        )}
 
         {showForm && (
           <div className={`fixed inset-0 flex justify-center items-center z-50 ${
@@ -138,11 +215,7 @@ const Projects = () => {
                 placeholder="Project Title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className={`w-full p-2 mb-3 rounded ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'border border-gray-400 text-gray-800'
-                }`}
+                className="w-full p-2 mb-3 rounded"
                 required
               />
 
@@ -151,11 +224,7 @@ const Projects = () => {
                 placeholder="Project Description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className={`w-full p-2 mb-3 rounded ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'border border-gray-400 text-gray-800'
-                }`}
+                className="w-full p-2 mb-3 rounded"
                 required
               />
 
@@ -163,30 +232,21 @@ const Projects = () => {
                 name="students"
                 multiple
                 onChange={handleInputChange}
-                className={`w-full p-2 mb-3 rounded h-28 ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'border border-gray-400 text-gray-800'
-                }`}
+                value={formData.students}
+                className="w-full p-2 mb-3 rounded h-28"
               >
-                {(JSON.parse(localStorage.getItem("signUpData")) || [])
-                  .filter((u) => u.isStudent)
-                  .map((student) => (
-                    <option key={student.email} value={student.username}>
-                      {student.username}
-                    </option>
-                  ))}
+                {studentList.map((student) => (
+                  <option key={student.email} value={student.username}>
+                    {student.username}
+                  </option>
+                ))}
               </select>
 
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className={`w-full p-2 mb-3 rounded ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'border border-gray-400 text-gray-800'
-                }`}
+                className="w-full p-2 mb-3 rounded"
                 required
               >
                 <option value="">Select a Category</option>
@@ -202,11 +262,7 @@ const Projects = () => {
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleInputChange}
-                className={`w-full p-2 mb-3 rounded ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'border border-gray-400 text-gray-800'
-                }`}
+                className="w-full p-2 mb-3 rounded"
                 required
               />
 
@@ -215,11 +271,7 @@ const Projects = () => {
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleInputChange}
-                className={`w-full p-2 mb-3 rounded ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'border border-gray-400 text-gray-800'
-                }`}
+                className="w-full p-2 mb-3 rounded"
                 required
               />
 
@@ -227,11 +279,7 @@ const Projects = () => {
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className={`w-full p-2 mb-4 rounded ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'border border-gray-400 text-gray-800'
-                }`}
+                className="w-full p-2 mb-4 rounded"
               >
                 <option>In Progress</option>
                 <option>Completed</option>

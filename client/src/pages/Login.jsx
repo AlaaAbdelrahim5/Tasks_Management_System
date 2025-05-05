@@ -9,18 +9,48 @@ const Login = () => {
   const [staySignedIn, setStaySignedIn] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const userData = { email, username: email.split("@")[0] };
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    // Redirect to home or dashboard
-    navigate("/");
-
-    // Force page reload to update header state
-    window.location.reload();
+  
+    const query = `
+      mutation Login($email: String!, $password: String!) {
+        login(email: $email, password: $password) {
+          id
+          email
+          username
+          isStudent
+          universityId
+        }
+      }
+    `;
+  
+    const variables = { email, password };
+  
+    try {
+      const response = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, variables }),
+      });
+  
+      const result = await response.json();
+  
+      if (result.errors) {
+        alert(result.errors[0].message);
+        return;
+      }
+  
+      const user = result.data.login;
+      localStorage.setItem("user", JSON.stringify(user));
+  
+      navigate("/");
+      window.location.reload();
+    } catch (err) {
+      console.error("Login failed:", err);
+      alert("Login failed: " + err.message);
+    }
   };
+  
 
   return (
     <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} px-4 sm:px-6 lg:px-8`}>
