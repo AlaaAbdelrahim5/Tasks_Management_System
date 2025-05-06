@@ -10,35 +10,7 @@ const Home = () => {
   const [taskCount, setTaskCount] = useState(0);
   const [finishedProjectCount, setFinishedProjectCount] = useState(0);
   const [isStudent, setIsStudent] = useState(false);
-
-  const getStudentCount = () => {
-    const signUpData = JSON.parse(localStorage.getItem("signUpData")) || [];
-    return signUpData.filter((user) => user.isStudent).length;
-  };
-
-  const getNumberOfProjects = () => {
-    const projects = JSON.parse(localStorage.getItem("projects")) || [];
-    return projects.length;
-  };
-
-  const getNumberOfTasks = () => {
-    const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-    return tasks.length;
-  };
-
-  const getNumberOfFinishedProjects = () => {
-    const projects = JSON.parse(localStorage.getItem("projects")) || [];
-    return projects.filter((project) => project.progress === 100).length;
-  };
-
-  const getCurrentUserRole = () => {
-    const loginData =
-      JSON.parse(localStorage.getItem("loginData")) ||
-      JSON.parse(sessionStorage.getItem("loginSession"));
-    const users = JSON.parse(localStorage.getItem("signUpData")) || [];
-    const currentUser = users.find((user) => user.email === loginData?.email);
-    return currentUser?.isStudent || false;
-  };
+  const [username, setUsername] = useState("");
 
   const formatDateTime = () => {
     const now = new Date();
@@ -55,87 +27,107 @@ const Home = () => {
     return now.toLocaleString("en-US", options);
   };
 
+  const fetchDashboardStats = async () => {
+    const user = JSON.parse(localStorage.getItem("user")) || {};
+    const currentUser = user.username || "";
+    const student = user.isStudent || false;
+  
+    setIsStudent(student);
+    setUsername(currentUser);
+  
+    try {
+      const res = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            query {
+              getProjects { status students }
+              getStudents { id }
+              getTasks { assignedStudent }
+            }
+          `,
+        }),
+      });
+  
+      const { data } = await res.json();
+  
+      if (student) {
+        const myProjects = data.getProjects.filter(p =>
+          p.students?.includes(currentUser)
+        );
+        const myTasks = data.getTasks.filter(t =>
+          t.assignedStudent === currentUser
+        );
+        const myFinishedProjects = myProjects.filter(p =>
+          ["finished", "completed"].includes(p.status.toLowerCase())
+        );
+  
+        setProjectCount(myProjects.length);
+        setTaskCount(myTasks.length);
+        setFinishedProjectCount(myFinishedProjects.length);
+        setStudentCount(0); // hide for student
+      } else {
+        const finished = data.getProjects.filter(p =>
+          ["finished", "completed"].includes(p.status.toLowerCase())
+        );
+  
+        setProjectCount(data.getProjects.length);
+        setTaskCount(data.getTasks.length);
+        setFinishedProjectCount(finished.length);
+        setStudentCount(data.getStudents.length);
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch dashboard stats:", error);
+    }
+  };
+  
+
   useEffect(() => {
-    const updateData = () => {
-      setStudentCount(getStudentCount());
-      setProjectCount(getNumberOfProjects());
-      setTaskCount(getNumberOfTasks());
-      setFinishedProjectCount(getNumberOfFinishedProjects());
-      setIsStudent(getCurrentUserRole());
-      setDateTime(formatDateTime());
-    };
-
-    updateData();
-
+    fetchDashboardStats(); // ✅ this must be called here
+    setDateTime(formatDateTime());
     const interval = setInterval(() => {
       setDateTime(formatDateTime());
     }, 1000);
-
-    const dataCheckInterval = setInterval(updateData, 5000);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(dataCheckInterval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className={`p-4 min-h-screen mt-16 ${
-      darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'
-    }`}>
-      <div id="welcome-home" className="mb-8 flex flex-col sm:flex-row justify-between items-center">
-        <h2 id="welcome-msg" className="text-2xl sm:text-3xl font-bold text-center sm:text-left">
+    <div className={`p-4 min-h-screen mt-16 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+      <div className="mb-8 flex flex-col sm:flex-row justify-between items-center">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">
           Welcome to the Task Management System
         </h2>
-        <p id="datetime" className={`text-lg mt-4 sm:mt-0 text-center sm:text-right ${
-          darkMode ? 'text-gray-300' : 'text-gray-700'
-        }`}>
+        <p className={`text-lg mt-4 sm:mt-0 text-center sm:text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
           {dateTime}
         </p>
       </div>
 
-      <div
-        id="cards"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-      >
-        <div className={`p-4 rounded shadow text-center ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        }`}>
-          <b className="block mb-2">
-            Number of <br /> Projects
-          </b>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <b className="block mb-2">Number of <br /> Projects</b>
           <span>{projectCount}</span>
         </div>
-        <div
-          id="number-of-students-card"
-          className={`p-4 rounded shadow text-center ${
-            darkMode ? 'bg-gray-800' : 'bg-white'
-          }`}
-        >
-          <b className="block mb-2">
-            Number of <br /> Students
-          </b>
-          <span id="student-count">{studentCount}</span>
-        </div>
-        <div className={`p-4 rounded shadow text-center ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        }`}>
-          <b className="block mb-2">
-            Number of <br /> Tasks
-          </b>
+
+        {!isStudent && (
+          <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <b className="block mb-2">Number of <br /> Students</b>
+            <span>{studentCount}</span>
+          </div>
+        )}
+
+        <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <b className="block mb-2">Number of <br /> Tasks</b>
           <span>{taskCount}</span>
         </div>
-        <div className={`p-4 rounded shadow text-center ${
-          darkMode ? 'bg-gray-800' : 'bg-white'
-        }`}>
-          <b className="block mb-2">
-            Number of <br /> Finished Projects
-          </b>
+
+        <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <b className="block mb-2">Number of <br /> Finished Projects</b>
           <span>{finishedProjectCount}</span>
         </div>
       </div>
 
-      <div id="dashboard-overview" className="mt-8">
+      <div className="mt-8">
         <DashboardChart
           projectCount={projectCount}
           studentCount={studentCount}

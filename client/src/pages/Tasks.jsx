@@ -18,6 +18,10 @@ const Tasks = () => {
     dueDate: "",
   });
 
+  const user = JSON.parse(localStorage.getItem("user"));
+  const currentUsername = user?.username;
+  const isStudent = user?.isStudent;
+
   useEffect(() => {
     fetchProjects();
     fetchTasks();
@@ -27,24 +31,25 @@ const Tasks = () => {
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `query { getProjects { id title students } }`,
-      }),
+      body: JSON.stringify({ query: `query { getProjects { id title students } }` }),
     });
     const { data } = await res.json();
     setProjects(data.getProjects);
   };
 
   const fetchTasks = async () => {
+    const query = isStudent
+      ? `query { getStudentTasks(username: "${currentUsername}") { id taskId project name description assignedStudent status dueDate } }`
+      : `query { getTasks { id taskId project name description assignedStudent status dueDate } }`;
+
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `query { getTasks { id taskId project name description assignedStudent status dueDate } }`,
-      }),
+      body: JSON.stringify({ query }),
     });
+
     const { data } = await res.json();
-    setTasks(data.getTasks);
+    setTasks(isStudent ? data.getStudentTasks : data.getTasks);
   };
 
   const fetchStudents = async (projectId) => {
@@ -54,9 +59,7 @@ const Tasks = () => {
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `query { getStudents { username email } }`,
-      }),
+      body: JSON.stringify({ query: `query { getStudents { username email } }` }),
     });
     const { data } = await res.json();
     const connected = data.getStudents.filter((s) =>
@@ -67,39 +70,23 @@ const Tasks = () => {
 
   const handleSort = (a, b) => {
     switch (sortBy) {
-      case "Project":
-        return a.project.localeCompare(b.project);
-      case "Due Date":
-        return new Date(a.dueDate) - new Date(b.dueDate);
-      case "Assigned Student":
-        return a.assignedStudent.localeCompare(b.assignedStudent);
-      default:
-        return a.status.localeCompare(b.status);
+      case "Project": return a.project.localeCompare(b.project);
+      case "Due Date": return new Date(a.dueDate) - new Date(b.dueDate);
+      case "Assigned Student": return a.assignedStudent.localeCompare(b.assignedStudent);
+      default: return a.status.localeCompare(b.status);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const taskId = `${tasks.length + 1}`; // auto-increment
+    const taskId = `${tasks.length + 1}`;
 
     const mutation = `
       mutation AddTask($taskInput: TaskInput!) {
-        addTask(taskInput: $taskInput) {
-          id
-        }
+        addTask(taskInput: $taskInput) { id }
       }
     `;
-    const variables = {
-      taskInput: {
-        taskId,
-        project: formData.project,
-        name: formData.name,
-        description: formData.description,
-        assignedStudent: formData.assignedStudent,
-        status: formData.status,
-        dueDate: formData.dueDate,
-      },
-    };
+    const variables = { taskInput: { ...formData, taskId } };
 
     await fetch("http://localhost:4000/graphql", {
       method: "POST",
@@ -111,13 +98,52 @@ const Tasks = () => {
     fetchTasks();
   };
 
+  const statusOptions = ["In Progress", "Completed", "Pending", "On Hold", "Cancelled"];
+  const statusColors = {
+    "Pending": "text-yellow-500",
+    "In Progress": "text-blue-500",
+    "On Hold": "text-orange-500",
+    "Completed": "text-green-500",
+    "Cancelled": "text-red-500"
+  };
+
+  const updateTaskStatus = async (taskId, newStatus) => {
+    const mutation = `
+      mutation UpdateTaskStatus($id: ID!, $status: String!) {
+        updateTaskStatus(id: $id, status: $status) {
+          id
+          status
+        }
+      }
+    `;
+    const variables = { id: taskId, status: newStatus };
+
+    try {
+      const res = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: mutation, variables }),
+      });
+
+      const { data } = await res.json();
+      if (data.updateTaskStatus) fetchTasks();
+    } catch (error) {
+      console.error("Error updating task status:", error);
+    }
+  };
+
+  const handleStatusClick = (task) => {
+    const currentIndex = statusOptions.indexOf(task.status);
+    const nextIndex = (currentIndex + 1) % statusOptions.length;
+    const newStatus = statusOptions[nextIndex];
+    updateTaskStatus(task.id, newStatus);
+  };
+
   return (
     <div className={`pt-16 min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
       <div className="flex justify-between px-4 pt-6 mb-4">
         <div className="flex gap-2 items-center">
-          <label className={`text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>
-            Sort by:
-          </label>
+          <label className={`text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>Sort by:</label>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -132,9 +158,7 @@ const Tasks = () => {
         <button
           onClick={() => setShowForm(true)}
           className={`px-4 py-2 rounded ${darkMode ? "bg-blue-600 text-white" : "bg-blue-500 text-white"}`}
-        >
-          Create a New Task
-        </button>
+        >Create a New Task</button>
       </div>
 
       <div className={`mx-4 shadow rounded-lg overflow-x-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
@@ -142,9 +166,7 @@ const Tasks = () => {
           <thead className={darkMode ? "bg-gray-700" : "bg-gray-200"}>
             <tr>
               {["Task ID", "Project", "Name", "Description", "Student", "Status", "Due Date"].map((h, i) => (
-                <th key={i} className={`p-3 border-b ${darkMode ? "text-white border-gray-600" : "text-gray-900"}`}>
-                  {h}
-                </th>
+                <th key={i} className={`p-3 border-b ${darkMode ? "text-white border-gray-600" : "text-gray-900"}`}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -156,9 +178,10 @@ const Tasks = () => {
                 <td className="p-3 border-b">{task.name}</td>
                 <td className="p-3 border-b">{task.description}</td>
                 <td className="p-3 border-b">{task.assignedStudent}</td>
-                <td className={`p-3 border-b ${darkMode ? "text-green-400" : "text-green-700"}`}>
-                  {task.status}
-                </td>
+                <td
+                  onClick={() => handleStatusClick(task)}
+                  className={`p-3 border-b cursor-pointer font-semibold ${statusColors[task.status]}`}
+                >{task.status}</td>
                 <td className="p-3 border-b">{task.dueDate}</td>
               </tr>
             ))}
@@ -224,11 +247,9 @@ const Tasks = () => {
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               className="w-full mb-3 p-2 rounded"
             >
-              <option>In Progress</option>
-              <option>Completed</option>
-              <option>Pending</option>
-              <option>On Hold</option>
-              <option>Cancelled</option>
+              {statusOptions.map(status => (
+                <option key={status}>{status}</option>
+              ))}
             </select>
 
             <label className="block mb-1">Due Date</label>

@@ -8,11 +8,16 @@ module.exports = {
     getProjects: async () => await Project.find(),
     getStudents: async () => await User.find({ isStudent: true }),
     getTasks: async () => await Task.find(),
-    getStudentTasks: async (_, { username }) =>
-      await Task.find({ assignedStudent: username }),
+    getStudentTasks: async (_, { username }) => {
+      return await Task.find({ assignedStudent: username });
+    }
   },
 
   Mutation: {
+    updateTaskStatus: async (_, { id, status }) => {
+      const updatedTask = await db.tasks.update({ id }, { status });
+      return updatedTask;
+    },
     signUp: async (_, { userInput }) => {
       const { email, username, password, isStudent, universityId } = userInput;
       const existingUser = await User.findOne({ email });
