@@ -90,15 +90,21 @@ const Chat = () => {
   };
 
   return (
-    <div className={`flex flex-col md:flex-row min-h-screen pt-20 gap-6 p-4 ${
-      darkMode ? "bg-gray-900 text-gray-200" : "bg-white text-gray-800"
-    }`}>
+    <div
+      className={`flex flex-col md:flex-row min-h-screen pt-20 gap-6 p-4 ${
+        darkMode ? "bg-gray-900 text-gray-200" : "bg-white text-gray-800"
+      }`}
+    >
       <div
         className={`w-full md:w-64 p-4 rounded-lg shadow-lg ${
           darkMode ? "bg-gray-800 border-gray-700" : "bg-white border border-gray-200"
         }`}
       >
-        <h2 className={`text-lg font-bold mb-4 ${darkMode ? "text-white" : "text-gray-800"}`}>
+        <h2
+          className={`text-lg font-bold mb-4 ${
+            darkMode ? "text-white" : "text-gray-800"
+          }`}
+        >
           Users You Can Chat With
         </h2>
         <div className="space-y-2">
@@ -121,7 +127,9 @@ const Chat = () => {
               </div>
               <div className="flex flex-col">
                 <span className="font-medium">{user.username}</span>
-                <span className="text-xs opacity-70">{user.isStudent ? "Student" : "Admin"}</span>
+                <span className="text-xs opacity-70">
+                  {user.isStudent ? "Student" : "Admin"}
+                </span>
               </div>
             </div>
           ))}
@@ -135,7 +143,9 @@ const Chat = () => {
       >
         <div
           className={`text-lg font-semibold px-4 py-3 border-b ${
-            darkMode ? "border-gray-700 text-white" : "border-gray-200 text-gray-800"
+            darkMode
+              ? "border-gray-700 text-white"
+              : "border-gray-200 text-gray-800"
           }`}
         >
           Chatting with {selectedStudent || "(Name)"}...
@@ -143,7 +153,9 @@ const Chat = () => {
 
         <div
           className={`flex-1 p-4 overflow-y-auto space-y-3 ${
-            darkMode ? "bg-gray-900 text-gray-200" : "bg-gray-50 text-gray-800"
+            darkMode
+              ? "bg-gray-900 text-gray-200"
+              : "bg-gray-50 text-gray-800"
           }`}
         >
           {messages.map((msg) => (
@@ -151,7 +163,10 @@ const Chat = () => {
               key={msg.id}
               className={`p-3 rounded-lg max-w-xs ${
                 msg.sender === user.username
-                  ? "ml-auto " + (darkMode ? "bg-blue-600 text-white" : "bg-blue-500 text-white")
+                  ? "ml-auto " +
+                    (darkMode
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-500 text-white")
                   : darkMode
                   ? "bg-gray-700"
                   : "bg-blue-100"
@@ -164,7 +179,9 @@ const Chat = () => {
 
         <div
           className={`flex items-center border-t p-3 ${
-            darkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"
+            darkMode
+              ? "border-gray-700 bg-gray-800"
+              : "border-gray-200 bg-white"
           }`}
         >
           <input
@@ -181,7 +198,9 @@ const Chat = () => {
           <button
             onClick={handleSend}
             className={`px-5 py-2 rounded-lg transition ${
-              darkMode ? "bg-blue-600 text-white hover:bg-blue-500" : "bg-blue-600 text-white hover:bg-blue-500"
+              darkMode
+                ? "bg-blue-600 text-white hover:bg-blue-500"
+                : "bg-blue-600 text-white hover:bg-blue-500"
             }`}
           >
             Send
