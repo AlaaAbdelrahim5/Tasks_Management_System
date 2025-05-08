@@ -35,24 +35,34 @@ const Header = () => {
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 flex justify-between items-center py-3 px-5 shadow-md z-10 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
-      <nav className="nav-left">
+    <header
+      className={`fixed top-0 left-0 right-0 flex flex-wrap justify-between items-center py-3 px-5 shadow-md z-10 ${
+        darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
+      }`}
+    >
+      <nav className="flex items-center">
         <button
           id="toggle-mode"
           onClick={toggleDarkMode}
-          className={`p-2 rounded-full hover:bg-opacity-30 transition flex items-center justify-center ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-300'}`}
+          className={`p-2 rounded-full hover:bg-opacity-30 transition flex items-center justify-center ${
+            darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
+          }`}
           aria-label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
-          {darkMode ? <FaSun className="text-yellow-400" /> : <FaMoon className="text-gray-700" />}
+          {darkMode ? (
+            <FaSun className="text-yellow-400" />
+          ) : (
+            <FaMoon className="text-gray-700" />
+          )}
         </button>
       </nav>
-      <nav className="flex items-center gap-4">
+      <nav className="flex flex-wrap items-center gap-4 mt-3 sm:mt-0">
         {!isLoggedIn ? (
           <>
             <Link to="/login">
               <button
                 id="loginBtn"
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition w-full sm:w-auto"
               >
                 Login
               </button>
@@ -60,7 +70,11 @@ const Header = () => {
             <Link to="/signup">
               <button
                 id="signUpBtn"
-                className={`px-4 py-2 rounded-md transition ${darkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+                className={`px-4 py-2 rounded-md transition w-full sm:w-auto ${
+                  darkMode
+                    ? "bg-gray-700 text-white hover:bg-gray-600"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
               >
                 Sign Up
               </button>
@@ -68,13 +82,16 @@ const Header = () => {
           </>
         ) : (
           <>
-            <h1 id="index-username" className="font-medium">
+            <h1
+              id="index-username"
+              className="font-medium text-center w-full sm:w-auto"
+            >
               {username}
             </h1>
             <button
               id="logout"
               onClick={logout}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
+              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition w-full sm:w-auto"
             >
               Logout
             </button>

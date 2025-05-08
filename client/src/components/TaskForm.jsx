@@ -35,7 +35,6 @@ const TaskForm = ({
     onSave(data);
   };
 
-  // ألوان ديناميكية
   const bgForm = darkMode ? "bg-gray-800 text-white" : "bg-white text-black";
   const bgOverlay = darkMode ? "bg-black bg-opacity-40" : "bg-white bg-opacity-60";
   const fieldBg = darkMode
@@ -46,7 +45,7 @@ const TaskForm = ({
     <div className={`fixed inset-0 flex items-center justify-center z-50 ${bgOverlay}`}>
       <form
         onSubmit={submit}
-        className={`p-6 rounded-lg shadow-lg w-full max-w-md border ${bgForm} ${
+        className={`p-6 rounded-lg shadow-lg w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl border ${bgForm} ${
           darkMode ? "border-gray-700" : "border-gray-200"
         }`}
       >
@@ -134,7 +133,7 @@ const TaskForm = ({
           required
         />
 
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col sm:flex-row justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
