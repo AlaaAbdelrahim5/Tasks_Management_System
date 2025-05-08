@@ -89,5 +89,9 @@ module.exports = {
       const project = new Project(projectInput);
       return await project.save();
     },
+    deleteProject: async (_, { id }) => {
+      await Project.findByIdAndDelete(id);
+      return "Project deleted successfully";
+    }
   },
 };

@@ -1,111 +1,71 @@
 import React from "react";
 
 const ProjectCard = ({ project, darkMode }) => {
-  const getStatusColor = status => {
-    switch (status) {
-      case "Completed":
-        return darkMode ? "text-green-400" : "text-green-600";
-      case "In Progress":
-        return darkMode ? "text-yellow-400" : "text-yellow-600";
-      case "On Hold":
-        return darkMode ? "text-orange-400" : "text-orange-600";
-      case "Cancelled":
-        return darkMode ? "text-red-400" : "text-red-600";
-      default:
-        return darkMode ? "text-gray-300" : "text-gray-600";
-    }
+  const getProgress = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const now = new Date();
+
+    if (isNaN(start) || isNaN(end)) return 0;
+    if (now <= start) return 0;
+    if (now >= end) return 100;
+
+    const total = end - start;
+    const elapsed = now - start;
+    return Math.round((elapsed / total) * 100);
   };
 
-  const getProgressColor = progress => {
-    if (progress < 30) return darkMode ? "bg-red-500" : "bg-red-600";
-    if (progress < 70) return darkMode ? "bg-yellow-500" : "bg-yellow-600";
-    return darkMode ? "bg-green-500" : "bg-green-600";
-  };
+  const progress = getProgress(project.startDate, project.endDate);
 
-  const formatDate = iso =>
-    iso ? new Date(iso).toLocaleDateString() : "-";
+  const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString() : "-";
 
   return (
     <div
-      className={`w-72 p-4 rounded shadow border transition-colors duration-200 ${
-        darkMode
-          ? "bg-gray-800 border-gray-700 hover:bg-gray-700"
-          : "bg-white border-gray-200 hover:bg-gray-50"
-      }`}
+    className={`p-4 rounded-lg shadow border transform transition-all duration-300 cursor-pointer
+      ${darkMode
+        ? "bg-gray-800 border-gray-600 hover:bg-gray-700 hover:shadow-blue-500/50"
+        : "bg-white border-gray-300 hover:bg-gray-100 hover:shadow-lg hover:shadow-blue-300/50"
+      }
+      hover:scale-[1.02]
+    `}
     >
       <h3
         className={`text-lg font-bold mb-2 ${
-          darkMode ? "text-blue-400" : "text-blue-600"
+          darkMode ? "text-blue-400" : "text-blue-700"
         }`}
       >
         {project.title}
       </h3>
 
-      <p
-        className={`text-sm mb-2 ${
-          darkMode ? "text-gray-300" : "text-gray-700"
-        }`}
-      >
-        {project.description}
+      <p className={`${darkMode ? "text-gray-300" : "text-gray-700"} mb-2`}>
+        <span className="font-semibold">Description:</span> {project.description}
       </p>
 
-      <p
-        className={`text-sm mb-1 ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        }`}
-      >
-        Start Date:{" "}
-        <span className="font-semibold">
-          {formatDate(project.startDate)}
-        </span>
+      <p className={`${darkMode ? "text-gray-300" : "text-gray-700"} mb-1`}>
+        <span className="font-semibold">Students:</span>{" "}
+        {project.students?.join(", ") || "-"}
       </p>
 
-      <p
-        className={`text-sm mb-2 ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        }`}
-      >
-        End Date:{" "}
-        <span className="font-semibold">
-          {formatDate(project.endDate)}
-        </span>
+      <p className={`${darkMode ? "text-gray-300" : "text-gray-700"} mb-2`}>
+        <span className="font-semibold">Category:</span> {project.category}
       </p>
 
-      <p
-        className={`text-sm mb-1 ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        }`}
-      >
-        Status:{" "}
-        <span className={`font-semibold ${getStatusColor(project.status)}`}>
-          {project.status}
-        </span>
-      </p>
-
-      <p
-        className={`text-sm ${
-          darkMode ? "text-gray-400" : "text-gray-600"
-        }`}
-      >
-        Progress:{" "}
-        <span
-          className={`font-semibold ${
-            darkMode ? "text-gray-300" : "text-gray-700"
-          }`}
+      <div className="w-full h-5 bg-gray-300 dark:bg-gray-700 rounded mt-2 mb-1 overflow-hidden">
+        <div
+          className="h-full bg-blue-600 text-white text-xs font-semibold flex items-center justify-center"
+          style={{ width: `${progress}%` }}
         >
-          {project.progress}%
-        </span>
-      </p>
+          {progress}%
+        </div>
+      </div>
 
       <div
-        className={`h-2 rounded mt-2 ${
-          darkMode ? "bg-gray-700" : "bg-gray-200"
+        className={`flex justify-between text-sm font-medium ${
+          darkMode ? "text-gray-400" : "text-gray-600"
         }`}
       >
-        <div
-          className={`h-2 rounded ${getProgressColor(project.progress)}`}
-          style={{ width: `${project.progress}%` }}
-        ></div>
+        <span>{formatDate(project.startDate)}</span>
+        <span>{formatDate(project.endDate)}</span>
       </div>
     </div>
   );

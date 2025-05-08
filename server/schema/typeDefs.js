@@ -74,6 +74,8 @@ module.exports = gql`
     updateTask(id: ID!, taskInput: TaskInput!): Task
   deleteTask(id: ID!): Task
       updateTaskStatus(id: ID!, status: String!): Task
+        deleteProject(id: ID!): String
+
 
   }
 `;

@@ -90,6 +90,38 @@ const Projects = () => {
     }
   };
 
+  const handleDeleteProject = async (projectId) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this project?");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            mutation DeleteProject($id: ID!) {
+              deleteProject(id: $id)
+            }
+          `,
+          variables: { id: projectId },
+        }),
+      });
+
+      const json = await res.json();
+      if (json.errors) {
+        alert(json.errors[0].message);
+        return;
+      }
+
+      setProjects((prev) => prev.filter((proj) => proj.id !== projectId));
+      setSelectedProject(null);
+    } catch (err) {
+      console.error("Failed to delete project:", err);
+      alert("Error deleting project.");
+    }
+  };
+
   const handleAddProject = async (e) => {
     e.preventDefault();
     const query = `
@@ -166,8 +198,9 @@ const Projects = () => {
           {isStudent ? "Your Projects" : "All Projects"}
         </h2>
 
-        {!isStudent && (
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mb-4">
+        {/* Always show search and filter */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mb-4">
+          {!isStudent && (
             <button
               onClick={() => setShowForm(true)}
               className={`px-4 py-2 rounded transition-colors ${
@@ -178,36 +211,38 @@ const Projects = () => {
             >
               Add New Project
             </button>
-            <input
-              type="text"
-              placeholder="Search projects by title or description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`px-3 py-2 rounded flex-grow transition-colors ${
-                darkMode
-                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                  : "border border-gray-400 text-gray-800 placeholder-gray-600"
-              }`}
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={`px-3 py-2 rounded transition-colors ${
-                darkMode
-                  ? "bg-gray-700 border-gray-600 text-white"
-                  : "border border-gray-400 text-gray-800"
-              }`}
-            >
-              <option>All Status</option>
-              <option>In Progress</option>
-              <option>Completed</option>
-              <option>Pending</option>
-              <option>On Hold</option>
-              <option>Cancelled</option>
-            </select>
-          </div>
-        )}
+          )}
 
+          <input
+            type="text"
+            placeholder="Search projects by title or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`px-3 py-2 rounded flex-grow transition-colors ${
+              darkMode
+                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                : "border border-gray-400 text-gray-800 placeholder-gray-600"
+            }`}
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`px-3 py-2 rounded transition-colors ${
+              darkMode
+                ? "bg-gray-700 border-gray-600 text-white"
+                : "border border-gray-400 text-gray-800"
+            }`}
+          >
+            <option>All Status</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+            <option>Pending</option>
+            <option>On Hold</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+
+        {/* Form for admin only */}
         {showForm && (
           <div className={`fixed inset-0 flex items-center justify-center z-50 ${overlayBg}`}>
             <form
@@ -218,47 +253,14 @@ const Projects = () => {
                 Create New Project
               </h3>
 
-              <input
-                type="text"
-                name="title"
-                placeholder="Project Title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className={fieldClass}
-                required
-              />
-
-              <textarea
-                name="description"
-                placeholder="Project Description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className={fieldClass}
-                rows={4}
-                required
-              />
-
-              <select
-                name="students"
-                multiple
-                value={formData.students}
-                onChange={handleInputChange}
-                className={`${fieldClass} h-28`}
-              >
+              <input type="text" name="title" placeholder="Project Title" value={formData.title} onChange={handleInputChange} className={fieldClass} required />
+              <textarea name="description" placeholder="Project Description" value={formData.description} onChange={handleInputChange} className={fieldClass} rows={4} required />
+              <select name="students" multiple value={formData.students} onChange={handleInputChange} className={`${fieldClass} h-28`}>
                 {studentList.map((s) => (
-                  <option key={s.email} value={s.username}>
-                    {s.username}
-                  </option>
+                  <option key={s.email} value={s.username}>{s.username}</option>
                 ))}
               </select>
-
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className={fieldClass}
-                required
-              >
+              <select name="category" value={formData.category} onChange={handleInputChange} className={fieldClass} required>
                 <option value="">Select a Category</option>
                 <option>Web Development</option>
                 <option>Mobile Development</option>
@@ -266,31 +268,9 @@ const Projects = () => {
                 <option>Machine Learning</option>
                 <option>Other</option>
               </select>
-
-              <input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleInputChange}
-                className={fieldClass}
-                required
-              />
-
-              <input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleInputChange}
-                className={fieldClass}
-                required
-              />
-
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className={fieldClass}
-              >
+              <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} className={fieldClass} required />
+              <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} className={fieldClass} required />
+              <select name="status" value={formData.status} onChange={handleInputChange} className={fieldClass}>
                 <option>In Progress</option>
                 <option>Completed</option>
                 <option>Pending</option>
@@ -299,25 +279,10 @@ const Projects = () => {
               </select>
 
               <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className={`px-4 py-2 rounded font-medium transition-colors ${
-                    darkMode
-                      ? "bg-red-600 text-white hover:bg-red-500"
-                      : "bg-red-500 text-white hover:bg-red-600"
-                  }`}
-                >
+                <button type="button" onClick={() => setShowForm(false)} className={`px-4 py-2 rounded font-medium transition-colors ${darkMode ? "bg-red-600 text-white hover:bg-red-500" : "bg-red-500 text-white hover:bg-red-600"}`}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className={`px-4 py-2 rounded font-medium transition-colors ${
-                    darkMode
-                      ? "bg-green-600 text-white hover:bg-green-500"
-                      : "bg-green-500 text-white hover:bg-green-600"
-                  }`}
-                >
+                <button type="submit" className={`px-4 py-2 rounded font-medium transition-colors ${darkMode ? "bg-green-600 text-white hover:bg-green-500" : "bg-green-500 text-white hover:bg-green-600"}`}>
                   Add Project
                 </button>
               </div>
@@ -326,16 +291,33 @@ const Projects = () => {
         )}
 
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProjects.map((project) => (
-            <div key={project.id} onClick={() => setSelectedProject(project)}>
-              <ProjectCard project={project} darkMode={darkMode} />
-            </div>
-          ))}
+        {filteredProjects.map((project) => {
+  const getProgress = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const now = new Date();
+    if (now <= start) return 0;
+    if (now >= end) return 100;
+    const total = end - start;
+    const elapsed = now - start;
+    return Math.round((elapsed / total) * 100);
+  };
+
+  return (
+    <div key={project.id} onClick={() => setSelectedProject(project)}>
+      <ProjectCard
+        project={{ ...project, progress: getProgress(project.startDate, project.endDate) }}
+        darkMode={darkMode}
+      />
+    </div>
+  );
+})}
         </div>
 
         <ProjectSidebar
           project={selectedProject}
           onClose={() => setSelectedProject(null)}
+          onDelete={handleDeleteProject}
           darkMode={darkMode}
         />
       </div>
