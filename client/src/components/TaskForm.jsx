@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { ThemeContext } from "../App";
 
 const TaskForm = ({
   show,
-  darkMode,
   projects,
   students,
   initialData,
@@ -11,6 +11,7 @@ const TaskForm = ({
   onSave,
   onClose,
 }) => {
+  const { darkMode } = useContext(ThemeContext);
   const [data, setData] = useState(initialData);
 
   useEffect(() => {
@@ -34,12 +35,19 @@ const TaskForm = ({
     onSave(data);
   };
 
+  // ألوان ديناميكية
+  const bgForm = darkMode ? "bg-gray-800 text-white" : "bg-white text-black";
+  const bgOverlay = darkMode ? "bg-black bg-opacity-40" : "bg-white bg-opacity-60";
+  const fieldBg = darkMode
+    ? "bg-gray-700 border-gray-600 placeholder-gray-300 text-gray-100"
+    : "bg-gray-100 border-gray-200 placeholder-gray-600 text-gray-800";
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className={`fixed inset-0 flex items-center justify-center z-50 ${bgOverlay}`}>
       <form
         onSubmit={submit}
-        className={`p-6 rounded-lg shadow-lg w-full max-w-md ${
-          darkMode ? "bg-gray-800 text-white" : "bg-white text-black"
+        className={`p-6 rounded-lg shadow-lg w-full max-w-md border ${bgForm} ${
+          darkMode ? "border-gray-700" : "border-gray-200"
         }`}
       >
         <h2 className="text-xl font-semibold mb-4 text-center">
@@ -50,7 +58,9 @@ const TaskForm = ({
           name="project"
           value={data.project}
           onChange={handleChange}
-          className="w-full p-2 mb-3 rounded"
+          className={`w-full p-2 mb-3 rounded border ${fieldBg} focus:outline-none focus:ring-2 ${
+            darkMode ? "focus:ring-blue-500" : "focus:ring-blue-300"
+          }`}
           required
         >
           <option value="">Select Project</option>
@@ -67,7 +77,9 @@ const TaskForm = ({
           value={data.name}
           onChange={handleChange}
           placeholder="Task Name"
-          className="w-full mb-3 p-2 rounded"
+          className={`w-full mb-3 p-2 rounded border ${fieldBg} focus:outline-none focus:ring-2 ${
+            darkMode ? "focus:ring-blue-500" : "focus:ring-blue-300"
+          }`}
           required
         />
 
@@ -76,14 +88,18 @@ const TaskForm = ({
           value={data.description}
           onChange={handleChange}
           placeholder="Description"
-          className="w-full mb-3 p-2 rounded"
+          className={`w-full mb-3 p-2 rounded border ${fieldBg} focus:outline-none focus:ring-2 ${
+            darkMode ? "focus:ring-blue-500" : "focus:ring-blue-300"
+          }`}
         />
 
         <select
           name="assignedStudent"
           value={data.assignedStudent}
           onChange={handleChange}
-          className="w-full mb-3 p-2 rounded"
+          className={`w-full mb-3 p-2 rounded border ${fieldBg} focus:outline-none focus:ring-2 ${
+            darkMode ? "focus:ring-blue-500" : "focus:ring-blue-300"
+          }`}
           required
         >
           <option value="">Select Student</option>
@@ -98,7 +114,9 @@ const TaskForm = ({
           name="status"
           value={data.status}
           onChange={handleChange}
-          className="w-full mb-3 p-2 rounded"
+          className={`w-full mb-3 p-2 rounded border ${fieldBg} focus:outline-none focus:ring-2 ${
+            darkMode ? "focus:ring-blue-500" : "focus:ring-blue-300"
+          }`}
         >
           {["In Progress", "Completed", "Pending", "On Hold", "Cancelled"].map(s => (
             <option key={s}>{s}</option>
@@ -110,7 +128,9 @@ const TaskForm = ({
           type="date"
           value={data.dueDate}
           onChange={handleChange}
-          className="w-full mb-4 p-2 rounded"
+          className={`w-full mb-4 p-2 rounded border ${fieldBg} focus:outline-none focus:ring-2 ${
+            darkMode ? "focus:ring-blue-500" : "focus:ring-blue-300"
+          }`}
           required
         />
 
@@ -118,11 +138,14 @@ const TaskForm = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded bg-red-500 text-white"
+            className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 transition"
           >
             Cancel
           </button>
-          <button type="submit" className="px-4 py-2 rounded bg-green-600 text-white">
+          <button
+            type="submit"
+            className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition"
+          >
             {data.taskId ? "Update" : "Add"} Task
           </button>
         </div>

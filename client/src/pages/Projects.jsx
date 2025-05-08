@@ -70,15 +70,12 @@ const Projects = () => {
     })
       .then((res) => res.json())
       .then((result) => {
-        const allProjects = result.data.getProjects;
-        if (isStudent) {
-          const filtered = allProjects.filter(p =>
-            p.students.includes(currentUsername)
-          );
-          setProjects(filtered);
-        } else {
-          setProjects(allProjects);
-        }
+        const all = result.data.getProjects;
+        setProjects(
+          isStudent
+            ? all.filter((p) => p.students.includes(currentUsername))
+            : all
+        );
       })
       .catch((err) => console.error("Failed to fetch projects", err));
   }, []);
@@ -87,15 +84,14 @@ const Projects = () => {
     const { name, value, selectedOptions } = e.target;
     if (name === "students") {
       const values = Array.from(selectedOptions).map((opt) => opt.value);
-      setFormData({ ...formData, students: values });
+      setFormData((prev) => ({ ...prev, students: values }));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   const handleAddProject = async (e) => {
     e.preventDefault();
-  
     const query = `
       mutation AddProject($projectInput: ProjectInput!) {
         addProject(projectInput: $projectInput) {
@@ -110,33 +106,22 @@ const Projects = () => {
         }
       }
     `;
-  
     const variables = { projectInput: formData };
-  
     try {
-      const response = await fetch("http://localhost:4000/graphql", {
+      const res = await fetch("http://localhost:4000/graphql", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, variables }),
       });
-  
-      const result = await response.json();
-      if (result.errors) {
-        alert(result.errors[0].message);
+      const json = await res.json();
+      if (json.errors) {
+        alert(json.errors[0].message);
         return;
       }
-  
-      const newProject = result.data.addProject;
-  
-      if (isStudent) {
-        // Only add if the student is assigned to the project
-        if (newProject.students.includes(currentUsername)) {
-          setProjects([...projects, newProject]);
-        }
-      } else {
-        setProjects([...projects, newProject]);
+      const newProj = json.data.addProject;
+      if (!isStudent || newProj.students.includes(currentUsername)) {
+        setProjects((prev) => [...prev, newProj]);
       }
-  
       setFormData({
         title: "",
         description: "",
@@ -152,52 +137,65 @@ const Projects = () => {
       alert("Error adding project.");
     }
   };
-  
 
-  const filteredProjects = projects.filter((project) => {
+  const filteredProjects = projects.filter((p) => {
     const matchSearch =
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase());
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchStatus =
-      statusFilter === "All Status" || project.status === statusFilter;
+      statusFilter === "All Status" || p.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
+  const fieldClass = `w-full p-2 mb-3 rounded border transition-colors focus:outline-none focus:ring-2 ${
+    darkMode
+      ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500"
+      : "bg-gray-50 border-gray-200 text-gray-800 focus:ring-blue-300"
+  }`;
+
+  const overlayBg = darkMode
+    ? "bg-gray-900 bg-opacity-70"
+    : "bg-gray-500 bg-opacity-40";
+  const formBg = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800";
+  const formBorder = darkMode ? "border-gray-700" : "border-gray-200";
+
   return (
-    <div className={`py-16 min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+    <div className={`py-16 min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
       <div className="m-4">
-        <h2 className={`text-2xl pb-4 font-bold ${darkMode ? 'text-blue-400' : 'text-blue-800'}`}>
+        <h2 className={`text-2xl pb-4 font-bold ${darkMode ? "text-blue-400" : "text-blue-800"}`}>
           {isStudent ? "Your Projects" : "All Projects"}
         </h2>
 
         {!isStudent && (
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mb-4">
             <button
-              className={`px-4 py-2 rounded hover:bg-blue-700 ${
-                darkMode ? 'bg-blue-600 text-white' : 'bg-blue-800 text-white'
-              }`}
               onClick={() => setShowForm(true)}
+              className={`px-4 py-2 rounded transition-colors ${
+                darkMode
+                  ? "bg-blue-600 text-white hover:bg-blue-500"
+                  : "bg-blue-800 text-white hover:bg-blue-700"
+              }`}
             >
               Add New Project
             </button>
             <input
               type="text"
               placeholder="Search projects by title or description..."
-              className={`px-3 py-2 rounded flex-grow ${
-                darkMode
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                  : 'border border-gray-400 text-gray-800 placeholder-gray-600'
-              }`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              className={`px-3 py-2 rounded flex-grow transition-colors ${
+                darkMode
+                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                  : "border border-gray-400 text-gray-800 placeholder-gray-600"
+              }`}
             />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className={`px-3 py-2 rounded ${
+              className={`px-3 py-2 rounded transition-colors ${
                 darkMode
-                  ? 'bg-gray-700 border-gray-600 text-white'
-                  : 'border border-gray-400 text-gray-800'
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "border border-gray-400 text-gray-800"
               }`}
             >
               <option>All Status</option>
@@ -211,18 +209,12 @@ const Projects = () => {
         )}
 
         {showForm && (
-          <div className={`fixed inset-0 flex justify-center items-center z-50 ${
-            darkMode ? 'bg-gray-900 bg-opacity-80' : 'bg-gray-500 bg-opacity-50'
-          }`}>
+          <div className={`fixed inset-0 flex items-center justify-center z-50 ${overlayBg}`}>
             <form
               onSubmit={handleAddProject}
-              className={`p-6 rounded shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto ${
-                darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
-              }`}
+              className={`p-6 rounded shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto border ${formBg} ${formBorder} transition-colors`}
             >
-              <h3 className={`text-xl font-semibold mb-4 ${
-                darkMode ? 'text-blue-400' : 'text-blue-800'
-              }`}>
+              <h3 className={`text-xl font-semibold mb-4 ${darkMode ? "text-blue-400" : "text-blue-800"}`}>
                 Create New Project
               </h3>
 
@@ -232,7 +224,7 @@ const Projects = () => {
                 placeholder="Project Title"
                 value={formData.title}
                 onChange={handleInputChange}
-                className="w-full p-2 mb-3 rounded"
+                className={fieldClass}
                 required
               />
 
@@ -241,20 +233,21 @@ const Projects = () => {
                 placeholder="Project Description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="w-full p-2 mb-3 rounded"
+                className={fieldClass}
+                rows={4}
                 required
               />
 
               <select
                 name="students"
                 multiple
-                onChange={handleInputChange}
                 value={formData.students}
-                className="w-full p-2 mb-3 rounded h-28"
+                onChange={handleInputChange}
+                className={`${fieldClass} h-28`}
               >
-                {studentList.map((student) => (
-                  <option key={student.email} value={student.username}>
-                    {student.username}
+                {studentList.map((s) => (
+                  <option key={s.email} value={s.username}>
+                    {s.username}
                   </option>
                 ))}
               </select>
@@ -263,7 +256,7 @@ const Projects = () => {
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full p-2 mb-3 rounded"
+                className={fieldClass}
                 required
               >
                 <option value="">Select a Category</option>
@@ -279,7 +272,7 @@ const Projects = () => {
                 name="startDate"
                 value={formData.startDate}
                 onChange={handleInputChange}
-                className="w-full p-2 mb-3 rounded"
+                className={fieldClass}
                 required
               />
 
@@ -288,7 +281,7 @@ const Projects = () => {
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleInputChange}
-                className="w-full p-2 mb-3 rounded"
+                className={fieldClass}
                 required
               />
 
@@ -296,7 +289,7 @@ const Projects = () => {
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full p-2 mb-4 rounded"
+                className={fieldClass}
               >
                 <option>In Progress</option>
                 <option>Completed</option>
@@ -309,13 +302,21 @@ const Projects = () => {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                  className={`px-4 py-2 rounded font-medium transition-colors ${
+                    darkMode
+                      ? "bg-red-600 text-white hover:bg-red-500"
+                      : "bg-red-500 text-white hover:bg-red-600"
+                  }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  className={`px-4 py-2 rounded font-medium transition-colors ${
+                    darkMode
+                      ? "bg-green-600 text-white hover:bg-green-500"
+                      : "bg-green-500 text-white hover:bg-green-600"
+                  }`}
                 >
                   Add Project
                 </button>
@@ -325,8 +326,8 @@ const Projects = () => {
         )}
 
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredProjects.map((project, index) => (
-            <div key={index} onClick={() => setSelectedProject(project)}>
+          {filteredProjects.map((project) => (
+            <div key={project.id} onClick={() => setSelectedProject(project)}>
               <ProjectCard project={project} darkMode={darkMode} />
             </div>
           ))}
