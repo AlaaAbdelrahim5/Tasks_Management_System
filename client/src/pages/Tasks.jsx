@@ -34,9 +34,7 @@ const Tasks = () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        query: `
-          query { getProjects { id title students } }
-        `,
+        query: `query { getProjects { id title students } }`,
       }),
     });
     const { data } = await res.json();
@@ -45,20 +43,17 @@ const Tasks = () => {
 
   const fetchTasks = async () => {
     const query = isStudent
-      ? `
-        query {
+      ? `query {
           getStudentTasks(username: "${currentUsername}") {
             id taskId project name description assignedStudent status dueDate
           }
-        }
-      `
-      : `
-        query {
+        }`
+      : `query {
           getTasks {
             id taskId project name description assignedStudent status dueDate
           }
-        }
-      `;
+        }`;
+
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,36 +63,23 @@ const Tasks = () => {
     setTasks(isStudent ? data.getStudentTasks : data.getTasks);
   };
 
-  const fetchStudents = async projectId => {
-    const proj = projects.find(p => p.id === projectId);
+  const fetchStudents = async (projectId) => {
+    const proj = projects.find((p) => p.id === projectId);
     if (!proj) return;
+
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        query: `
-          query { getStudents { username email } }
-        `,
+        query: `query { getStudents { username email } }`,
       }),
     });
+
     const { data } = await res.json();
-    setStudents(data.getStudents.filter(s => proj.students.includes(s.username)));
+    setStudents(data.getStudents.filter((s) => proj.students.includes(s.username)));
   };
 
-  const handleSort = (a, b) => {
-    switch (sortBy) {
-      case "Project":
-        return a.project.localeCompare(b.project);
-      case "Due Date":
-        return new Date(a.dueDate) - new Date(b.dueDate);
-      case "Assigned Student":
-        return a.assignedStudent.localeCompare(b.assignedStudent);
-      default:
-        return a.status.localeCompare(b.status);
-    }
-  };
-
-  const openForm = task => {
+  const openForm = (task) => {
     if (task) {
       setEditingTask(task);
       setFormData({
@@ -109,7 +91,7 @@ const Tasks = () => {
         dueDate: task.dueDate,
         taskId: task.taskId,
       });
-      const proj = projects.find(p => p.title === task.project);
+      const proj = projects.find((p) => p.title === task.project);
       if (proj) fetchStudents(proj.id);
     } else {
       setEditingTask(null);
@@ -126,10 +108,10 @@ const Tasks = () => {
   };
 
   const handleFieldChange = (name, value) => {
-    setFormData(f => ({ ...f, [name]: value }));
+    setFormData((f) => ({ ...f, [name]: value }));
   };
 
-  const saveTask = async data => {
+  const saveTask = async (data) => {
     if (editingTask) {
       const mutation = `
         mutation UpdateTask($id: ID!, $input: TaskInput!) {
@@ -163,13 +145,23 @@ const Tasks = () => {
     fetchTasks();
   };
 
-  const statusOptions = ["In Progress", "Completed", "Pending", "On Hold", "Cancelled"];
-  const statusColors = {
-    Pending: darkMode ? "text-yellow-500" : "text-yellow-700",
-    "In Progress": darkMode ? "text-blue-500" : "text-blue-700",
-    "On Hold": darkMode ? "text-orange-500" : "text-orange-700",
-    Completed: darkMode ? "text-green-500" : "text-green-700",
-    Cancelled: darkMode ? "text-red-500" : "text-red-700",
+  const deleteTask = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this task?");
+    if (!confirmDelete) return;
+
+    const mutation = `
+      mutation DeleteTask($id: ID!) {
+        deleteTask(id: $id) { id }
+      }
+    `;
+
+    await fetch("http://localhost:4000/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: mutation, variables: { id } }),
+    });
+
+    fetchTasks();
   };
 
   const updateTaskStatus = async (id, status) => {
@@ -186,14 +178,38 @@ const Tasks = () => {
     fetchTasks();
   };
 
-  const handleStatusClick = task => {
-    const idx = statusOptions.indexOf(task.status);
-    updateTaskStatus(task.id, statusOptions[(idx + 1) % statusOptions.length]);
+  const handleStatusClick = (task) => {
+    const options = ["In Progress", "Completed", "Pending", "On Hold", "Cancelled"];
+    const idx = options.indexOf(task.status);
+    const newStatus = options[(idx + 1) % options.length];
+    updateTaskStatus(task.id, newStatus);
+  };
+
+  const handleSort = (a, b) => {
+    switch (sortBy) {
+      case "Project":
+        return a.project.localeCompare(b.project);
+      case "Due Date":
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      case "Assigned Student":
+        return a.assignedStudent.localeCompare(b.assignedStudent);
+      default:
+        return a.status.localeCompare(b.status);
+    }
+  };
+
+  const statusColors = {
+    Pending: darkMode ? "text-yellow-500" : "text-yellow-700",
+    "In Progress": darkMode ? "text-blue-500" : "text-blue-700",
+    "On Hold": darkMode ? "text-orange-500" : "text-orange-700",
+    Completed: darkMode ? "text-green-500" : "text-green-700",
+    Cancelled: darkMode ? "text-red-500" : "text-red-700",
   };
 
   const thClass = `px-4 py-2 align-middle text-left font-medium uppercase ${
     darkMode ? "text-white border-gray-600" : "text-gray-900 border-gray-200"
   }`;
+
   const tdClass = `px-4 py-3 align-middle whitespace-nowrap ${
     darkMode ? "text-white border-gray-600" : "text-gray-900 border-gray-200"
   }`;
@@ -205,7 +221,7 @@ const Tasks = () => {
           <label className={`text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>Sort by:</label>
           <select
             value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
+            onChange={(e) => setSortBy(e.target.value)}
             className={`px-2 py-1 rounded ${darkMode ? "bg-gray-700 text-white" : "bg-white text-black"}`}
           >
             <option>Tasks Status</option>
@@ -226,15 +242,13 @@ const Tasks = () => {
         <table className="table-auto w-full border-collapse">
           <thead className={darkMode ? "bg-gray-700" : "bg-gray-200"}>
             <tr>
-              {["Task ID", "Project", "Name", "Description", "Student", "Status", "Due Date", "Actions"].map(h => (
-                <th key={h} className={thClass}>
-                  {h}
-                </th>
+              {["Task ID", "Project", "Name", "Description", "Student", "Status", "Due Date", "Actions"].map((h) => (
+                <th key={h} className={thClass}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {[...tasks].sort(handleSort).map(task => (
+            {[...tasks].sort(handleSort).map((task) => (
               <tr key={task.id} className={darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"}>
                 <td className={tdClass}>{task.taskId}</td>
                 <td className={tdClass}>{task.project}</td>
@@ -255,7 +269,7 @@ const Tasks = () => {
                     <button onClick={() => openForm(task)} className="text-blue-500 hover:text-blue-700">
                       <FaEdit />
                     </button>
-                    <button onClick={() => updateTaskStatus(task.id, "Cancelled")} className="text-red-500 hover:text-red-700">
+                    <button onClick={() => deleteTask(task.id)} className="text-red-500 hover:text-red-700">
                       <FaTrash />
                     </button>
                   </div>

@@ -71,6 +71,8 @@ module.exports = gql`
     login(email: String!, password: String!): User
     addProject(projectInput: ProjectInput): Project
     addTask(taskInput: TaskInput): Task
+    updateTask(id: ID!, taskInput: TaskInput!): Task
+  deleteTask(id: ID!): Task
       updateTaskStatus(id: ID!, status: String!): Task
 
   }
