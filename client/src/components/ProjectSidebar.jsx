@@ -33,7 +33,7 @@ const ProjectSidebar = ({ project, onClose, darkMode }) => {
         <p><strong className={darkMode ? 'text-white' : ''}>Description:</strong> {project.description}</p>
         <p><strong className={darkMode ? 'text-white' : ''}>Category:</strong> {project.category}</p>
         <p>
-          <strong className={darkMode ? 'text-white' : ''}>Status:</strong> 
+          <strong className={darkMode ? 'text-white' : ''}>Status:</strong>
           <span className={`ml-1 font-medium ${
             project.status === 'Completed' ? 'text-green-500' :
             project.status === 'In Progress' ? 'text-yellow-500' :
@@ -68,6 +68,15 @@ const ProjectSidebar = ({ project, onClose, darkMode }) => {
             ))}
           </ul>
         </div>
+        <button
+          className={`w-full py-2 rounded mt-2 font-medium ${
+            darkMode
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-red-500 hover:bg-red-600 text-white'
+          }`}
+        >
+          Delete
+        </button>
       </div>
     </div>
   );

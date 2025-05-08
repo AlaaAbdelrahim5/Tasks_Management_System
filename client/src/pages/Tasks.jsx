@@ -1,14 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
 import { ThemeContext } from "../App";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import TaskForm from "../components/TaskForm";
 
 const Tasks = () => {
   const { darkMode } = useContext(ThemeContext);
-  const [showForm, setShowForm] = useState(false);
   const [projects, setProjects] = useState([]);
   const [students, setStudents] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [sortBy, setSortBy] = useState("Tasks Status");
-
+  const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     project: "",
     name: "",
@@ -17,6 +18,7 @@ const Tasks = () => {
     status: "In Progress",
     dueDate: "",
   });
+  const [editingTask, setEditingTask] = useState(null);
 
   const user = JSON.parse(localStorage.getItem("user"));
   const currentUsername = user?.username;
@@ -31,7 +33,11 @@ const Tasks = () => {
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: `query { getProjects { id title students } }` }),
+      body: JSON.stringify({
+        query: `
+          query { getProjects { id title students } }
+        `,
+      }),
     });
     const { data } = await res.json();
     setProjects(data.getProjects);
@@ -39,105 +45,158 @@ const Tasks = () => {
 
   const fetchTasks = async () => {
     const query = isStudent
-      ? `query { getStudentTasks(username: "${currentUsername}") { id taskId project name description assignedStudent status dueDate } }`
-      : `query { getTasks { id taskId project name description assignedStudent status dueDate } }`;
-
+      ? `
+        query {
+          getStudentTasks(username: "${currentUsername}") {
+            id taskId project name description assignedStudent status dueDate
+          }
+        }
+      `
+      : `
+        query {
+          getTasks {
+            id taskId project name description assignedStudent status dueDate
+          }
+        }
+      `;
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query }),
     });
-
     const { data } = await res.json();
     setTasks(isStudent ? data.getStudentTasks : data.getTasks);
   };
 
-  const fetchStudents = async (projectId) => {
-    const project = projects.find((p) => p.id === projectId);
-    if (!project) return;
-
+  const fetchStudents = async projectId => {
+    const proj = projects.find(p => p.id === projectId);
+    if (!proj) return;
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: `query { getStudents { username email } }` }),
+      body: JSON.stringify({
+        query: `
+          query { getStudents { username email } }
+        `,
+      }),
     });
     const { data } = await res.json();
-    const connected = data.getStudents.filter((s) =>
-      project.students.includes(s.username)
-    );
-    setStudents(connected);
+    setStudents(data.getStudents.filter(s => proj.students.includes(s.username)));
   };
 
   const handleSort = (a, b) => {
     switch (sortBy) {
-      case "Project": return a.project.localeCompare(b.project);
-      case "Due Date": return new Date(a.dueDate) - new Date(b.dueDate);
-      case "Assigned Student": return a.assignedStudent.localeCompare(b.assignedStudent);
-      default: return a.status.localeCompare(b.status);
+      case "Project":
+        return a.project.localeCompare(b.project);
+      case "Due Date":
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      case "Assigned Student":
+        return a.assignedStudent.localeCompare(b.assignedStudent);
+      default:
+        return a.status.localeCompare(b.status);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const taskId = `${tasks.length + 1}`;
+  const openForm = task => {
+    if (task) {
+      setEditingTask(task);
+      setFormData({
+        project: task.project,
+        name: task.name,
+        description: task.description,
+        assignedStudent: task.assignedStudent,
+        status: task.status,
+        dueDate: task.dueDate,
+        taskId: task.taskId,
+      });
+      const proj = projects.find(p => p.title === task.project);
+      if (proj) fetchStudents(proj.id);
+    } else {
+      setEditingTask(null);
+      setFormData({
+        project: "",
+        name: "",
+        description: "",
+        assignedStudent: "",
+        status: "In Progress",
+        dueDate: "",
+      });
+    }
+    setShowForm(true);
+  };
 
-    const mutation = `
-      mutation AddTask($taskInput: TaskInput!) {
-        addTask(taskInput: $taskInput) { id }
-      }
-    `;
-    const variables = { taskInput: { ...formData, taskId } };
+  const handleFieldChange = (name, value) => {
+    setFormData(f => ({ ...f, [name]: value }));
+  };
 
-    await fetch("http://localhost:4000/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: mutation, variables }),
-    });
-
+  const saveTask = async data => {
+    if (editingTask) {
+      const mutation = `
+        mutation UpdateTask($id: ID!, $input: TaskInput!) {
+          updateTask(id: $id, taskInput: $input) { id }
+        }
+      `;
+      await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: mutation,
+          variables: { id: editingTask.id, input: data },
+        }),
+      });
+    } else {
+      const mutation = `
+        mutation AddTask($input: TaskInput!) {
+          addTask(taskInput: $input) { id }
+        }
+      `;
+      await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: mutation,
+          variables: { input: { ...data, taskId: `${tasks.length + 1}` } },
+        }),
+      });
+    }
     setShowForm(false);
     fetchTasks();
   };
 
   const statusOptions = ["In Progress", "Completed", "Pending", "On Hold", "Cancelled"];
   const statusColors = {
-    "Pending": "text-yellow-500",
-    "In Progress": "text-blue-500",
-    "On Hold": "text-orange-500",
-    "Completed": "text-green-500",
-    "Cancelled": "text-red-500"
+    Pending: darkMode ? "text-yellow-500" : "text-yellow-700",
+    "In Progress": darkMode ? "text-blue-500" : "text-blue-700",
+    "On Hold": darkMode ? "text-orange-500" : "text-orange-700",
+    Completed: darkMode ? "text-green-500" : "text-green-700",
+    Cancelled: darkMode ? "text-red-500" : "text-red-700",
   };
 
-  const updateTaskStatus = async (taskId, newStatus) => {
+  const updateTaskStatus = async (id, status) => {
     const mutation = `
       mutation UpdateTaskStatus($id: ID!, $status: String!) {
-        updateTaskStatus(id: $id, status: $status) {
-          id
-          status
-        }
+        updateTaskStatus(id: $id, status: $status) { id status }
       }
     `;
-    const variables = { id: taskId, status: newStatus };
-
-    try {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: mutation, variables }),
-      });
-
-      const { data } = await res.json();
-      if (data.updateTaskStatus) fetchTasks();
-    } catch (error) {
-      console.error("Error updating task status:", error);
-    }
+    await fetch("http://localhost:4000/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: mutation, variables: { id, status } }),
+    });
+    fetchTasks();
   };
 
-  const handleStatusClick = (task) => {
-    const currentIndex = statusOptions.indexOf(task.status);
-    const nextIndex = (currentIndex + 1) % statusOptions.length;
-    const newStatus = statusOptions[nextIndex];
-    updateTaskStatus(task.id, newStatus);
+  const handleStatusClick = task => {
+    const idx = statusOptions.indexOf(task.status);
+    updateTaskStatus(task.id, statusOptions[(idx + 1) % statusOptions.length]);
   };
+
+  const thClass = `px-4 py-2 align-middle text-left font-medium uppercase ${
+    darkMode ? "text-white border-gray-600" : "text-gray-900 border-gray-200"
+  }`;
+  const tdClass = `px-4 py-3 align-middle whitespace-nowrap ${
+    darkMode ? "text-white border-gray-600" : "text-gray-900 border-gray-200"
+  }`;
 
   return (
     <div className={`pt-16 min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
@@ -146,7 +205,7 @@ const Tasks = () => {
           <label className={`text-lg ${darkMode ? "text-white" : "text-gray-900"}`}>Sort by:</label>
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={e => setSortBy(e.target.value)}
             className={`px-2 py-1 rounded ${darkMode ? "bg-gray-700 text-white" : "bg-white text-black"}`}
           >
             <option>Tasks Status</option>
@@ -156,118 +215,68 @@ const Tasks = () => {
           </select>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => openForm(null)}
           className={`px-4 py-2 rounded ${darkMode ? "bg-blue-600 text-white" : "bg-blue-500 text-white"}`}
-        >Create a New Task</button>
+        >
+          Create a New Task
+        </button>
       </div>
 
       <div className={`mx-4 shadow rounded-lg overflow-x-auto ${darkMode ? "bg-gray-800" : "bg-white"}`}>
-        <table className="w-full border-collapse">
+        <table className="table-auto w-full border-collapse">
           <thead className={darkMode ? "bg-gray-700" : "bg-gray-200"}>
             <tr>
-              {["Task ID", "Project", "Name", "Description", "Student", "Status", "Due Date"].map((h, i) => (
-                <th key={i} className={`p-3 border-b ${darkMode ? "text-white border-gray-600" : "text-gray-900"}`}>{h}</th>
+              {["Task ID", "Project", "Name", "Description", "Student", "Status", "Due Date", "Actions"].map(h => (
+                <th key={h} className={thClass}>
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {[...tasks].sort(handleSort).map((task) => (
-              <tr key={task.id} className={darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"}>
-                <td className="p-3 border-b">{task.taskId}</td>
-                <td className="p-3 border-b">{task.project}</td>
-                <td className="p-3 border-b">{task.name}</td>
-                <td className="p-3 border-b">{task.description}</td>
-                <td className="p-3 border-b">{task.assignedStudent}</td>
-                <td
-                  onClick={() => handleStatusClick(task)}
-                  className={`p-3 border-b cursor-pointer font-semibold ${statusColors[task.status]}`}
-                >{task.status}</td>
-                <td className="p-3 border-b">{task.dueDate}</td>
+            {[...tasks].sort(handleSort).map(task => (
+              <tr key={task.id} className={darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"}>
+                <td className={tdClass}>{task.taskId}</td>
+                <td className={tdClass}>{task.project}</td>
+                <td className={tdClass}>{task.name}</td>
+                <td className={tdClass}>{task.description}</td>
+                <td className={tdClass}>{task.assignedStudent}</td>
+                <td className="px-4 py-3 align-middle text-left">
+                  <button
+                    onClick={() => handleStatusClick(task)}
+                    className={`font-semibold ${statusColors[task.status]} px-3 py-1 rounded-lg`}
+                  >
+                    {task.status}
+                  </button>
+                </td>
+                <td className={tdClass}>{task.dueDate}</td>
+                <td className="px-4 py-3 align-middle text-left">
+                  <div className="inline-flex items-center space-x-2">
+                    <button onClick={() => openForm(task)} className="text-blue-500 hover:text-blue-700">
+                      <FaEdit />
+                    </button>
+                    <button onClick={() => updateTaskStatus(task.id, "Cancelled")} className="text-red-500 hover:text-red-700">
+                      <FaTrash />
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <form onSubmit={handleSubmit} className={`p-6 rounded-lg shadow-lg w-full max-w-md ${darkMode ? "bg-gray-800 text-white" : "bg-white text-black"}`}>
-            <h2 className="text-xl font-semibold mb-4 text-center">Create New Task</h2>
-
-            <label className="block mb-1">Project</label>
-            <select
-              value={formData.project}
-              onChange={(e) => {
-                const title = e.target.value;
-                setFormData({ ...formData, project: title });
-                const selected = projects.find(p => p.title === title);
-                if (selected) fetchStudents(selected.id);
-              }}
-              className="w-full p-2 mb-3 rounded"
-              required
-            >
-              <option value="">Select Project</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.title}>{p.title}</option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Task Name"
-              className="w-full mb-3 p-2 rounded"
-              required
-            />
-
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Description"
-              className="w-full mb-3 p-2 rounded"
-            />
-
-            <label className="block mb-1">Assign to Student</label>
-            <select
-              value={formData.assignedStudent}
-              onChange={(e) => setFormData({ ...formData, assignedStudent: e.target.value })}
-              className="w-full mb-3 p-2 rounded"
-              required
-            >
-              <option value="">Select Student</option>
-              {students.map((s) => (
-                <option key={s.email} value={s.username}>{s.username}</option>
-              ))}
-            </select>
-
-            <label className="block mb-1">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full mb-3 p-2 rounded"
-            >
-              {statusOptions.map(status => (
-                <option key={status}>{status}</option>
-              ))}
-            </select>
-
-            <label className="block mb-1">Due Date</label>
-            <input
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              className="w-full mb-4 p-2 rounded"
-              required
-            />
-
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowForm(false)} type="button" className="bg-red-500 text-white px-4 py-2 rounded">Cancel</button>
-              <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Add Task</button>
-            </div>
-          </form>
-        </div>
-      )}
+      <TaskForm
+        show={showForm}
+        darkMode={darkMode}
+        projects={projects}
+        students={students}
+        initialData={formData}
+        onFieldChange={handleFieldChange}
+        onProjectChange={fetchStudents}
+        onSave={saveTask}
+        onClose={() => setShowForm(false)}
+      />
     </div>
   );
 };
