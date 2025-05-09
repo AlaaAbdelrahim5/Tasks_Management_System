@@ -100,9 +100,15 @@ module.exports = {
     },
 
     deleteProject: async (_, { id }) => {
+      const project = await Project.findById(id);
+      if (!project) throw new Error("Project not found");
+    
+      await Task.deleteMany({ project: project.title }); // ✅ Match by title
       await Project.findByIdAndDelete(id);
-      return "Project deleted successfully";
+    
+      return "Project and related tasks deleted.";
     },
+    
 
     sendMessage: async (_, { sender, receiver, content }) => {
       const message = new Message({ sender, receiver, content });
