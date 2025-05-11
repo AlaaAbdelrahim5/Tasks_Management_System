@@ -4,15 +4,17 @@
     --bg-color: #1a202c;
     --text-color: #f7fafc;
     --sidebar-bg: #2d3748;
+    --sidebar-header-bg: #111827;
     --card-bg: #2d3748;
 }
 
 /* Light mode styles */
 :root {
-    --bg-color: #ffffff;
+    --bg-color: #f9fafb;
     --text-color: #1a202c;
-    --sidebar-bg: #f8f9fa;
+    --sidebar-bg: #ffffff;
     --card-bg: #ffffff;
+    --sidebar-header-bg: #3b82f6;
 }
 
 /* Apply these variables to your elements */

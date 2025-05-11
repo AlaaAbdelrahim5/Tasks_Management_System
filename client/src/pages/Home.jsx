@@ -91,9 +91,8 @@ const Home = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-
   return (
-    <div className={`p-4 min-h-screen mt-16 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+    <div className={`p-4 min-h-screen pt-16 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">
           Welcome to the Task Management System

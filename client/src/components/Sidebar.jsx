@@ -7,7 +7,6 @@ const Sidebar = () => {
   const { darkMode } = useContext(ThemeContext);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
   // Track window resize
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -21,68 +20,66 @@ const Sidebar = () => {
       setIsMobileMenuOpen(false);
     }
   }, [windowWidth]);
-
   const navLinkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
       isActive
         ? `bg-blue-600 text-white font-medium shadow-md ${darkMode ? 'shadow-blue-500/20' : 'shadow-blue-500/30'}`
         : darkMode
           ? 'text-gray-200 hover:bg-gray-700/70'
-          : 'text-gray-700 hover:bg-gray-300/70'
+          : 'text-gray-700 hover:bg-blue-100'
     }`;
-
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-
   return (
-    <>      {/* Mobile Menu Toggle Button */}
-      <button
+    <>      {/* Mobile Menu Toggle Button */}      <button
         onClick={toggleMobileMenu}
-        className={`md:hidden fixed z-50 bottom-6 right-6 p-3 rounded-full shadow-lg transition-transform ${
-          isMobileMenuOpen ? 'scale-90' : 'scale-100'
+        className={`md:hidden fixed z-50 bottom-6 right-6 p-3 rounded-full shadow-xl transition-all duration-300 ${
+          isMobileMenuOpen ? 'scale-95 rotate-180' : 'scale-100 rotate-0'
         } ${
           darkMode 
-            ? 'bg-blue-600 text-white border border-blue-500' 
-            : 'bg-white text-blue-600 border border-gray-200'
+            ? 'bg-blue-600 text-white border-2 border-blue-400' 
+            : 'bg-blue-500 text-white border border-blue-400'
         }`}
         aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
       >
         {isMobileMenuOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
       </button>{/* Sidebar - Desktop and Mobile */}      <aside 
         className={`fixed top-0 left-0 h-screen shadow-xl transition-all duration-300 ease-in-out z-40
-          ${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-black'}
+          ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}
           ${windowWidth >= 768 
-            ? 'w-64 translate-x-0 mt-16' 
+            ? 'w-64 translate-x-0 mt-0' 
             : isMobileMenuOpen 
-              ? 'w-64 translate-x-0 mt-0' 
-              : 'w-64 -translate-x-full mt-0'
+              ? 'w-80 translate-x-0 mt-0' 
+              : 'w-80 -translate-x-full mt-0'
           }
         `}
       >
         {/* Mobile sidebar header */}        {windowWidth < 768 && (
-          <div className={`p-4 flex items-center justify-between border-b ${darkMode ? 'border-gray-700' : 'border-gray-300'}`}>
-            <h3 className="font-medium text-lg">Task Management</h3>
+          <div className={`p-4 flex items-center justify-between border-b ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-300 bg-blue-700'}`}>
+            <h3 className="font-medium text-lg text-white">Task Management</h3>
             <button 
               onClick={toggleMobileMenu}
-              className="p-2 rounded-full hover:bg-gray-500/20"
+              className="p-2 rounded-full text-white hover:bg-white/20"
             >
               <FaTimes className="text-xl" />
             </button>
           </div>
-        )}
-          <div className={`flex flex-col overflow-hidden ${
-            windowWidth >= 768 ? 'h-full' : 'h-[calc(100vh-56px)]'
-          }`}>
+        )}{/* Desktop sidebar header - only shown on desktop */}
+        {windowWidth >= 768 && (
+          <div className={`py-5 px-5 flex items-center justify-start ${darkMode ? 'bg-gray-900' : 'bg-blue-700'}`}>
+            <h3 className="font-semibold text-white text-lg">Task Management</h3>
+          </div>
+        )}<div className="flex flex-col overflow-hidden h-[calc(100%-56px)]">
           <div className="flex-1 p-5 overflow-y-auto">
-            <nav className="flex flex-col space-y-2">
+            <nav className="flex flex-col space-y-3">
               <NavLink
-                to="/"
+                to="/home"
                 className={navLinkClass}
                 onClick={() => windowWidth < 768 && setIsMobileMenuOpen(false)}
               >
-                <FaHome className="text-lg" />
-                <span>Home</span>
+                <FaHome className={`${windowWidth < 768 ? 'text-xl' : 'text-lg'}`} />
+                <span className={`${windowWidth < 768 ? 'text-base font-medium' : ''}`}>Home</span>
               </NavLink>
               
               <NavLink
@@ -90,8 +87,8 @@ const Sidebar = () => {
                 className={navLinkClass}
                 onClick={() => windowWidth < 768 && setIsMobileMenuOpen(false)}
               >
-                <FaProjectDiagram className="text-lg" />
-                <span>Projects</span>
+                <FaProjectDiagram className={`${windowWidth < 768 ? 'text-xl' : 'text-lg'}`} />
+                <span className={`${windowWidth < 768 ? 'text-base font-medium' : ''}`}>Projects</span>
               </NavLink>
               
               <NavLink
@@ -99,8 +96,8 @@ const Sidebar = () => {
                 className={navLinkClass}
                 onClick={() => windowWidth < 768 && setIsMobileMenuOpen(false)}
               >
-                <FaTasks className="text-lg" />
-                <span>Tasks</span>
+                <FaTasks className={`${windowWidth < 768 ? 'text-xl' : 'text-lg'}`} />
+                <span className={`${windowWidth < 768 ? 'text-base font-medium' : ''}`}>Tasks</span>
               </NavLink>
               
               <NavLink
@@ -108,15 +105,14 @@ const Sidebar = () => {
                 className={navLinkClass}
                 onClick={() => windowWidth < 768 && setIsMobileMenuOpen(false)}
               >
-                <FaCommentDots className="text-lg" />
-                <span>Chat</span>
+                <FaCommentDots className={`${windowWidth < 768 ? 'text-xl' : 'text-lg'}`} />
+                <span className={`${windowWidth < 768 ? 'text-base font-medium' : ''}`}>Chat</span>
               </NavLink>
             </nav>
           </div>
-            {/* Footer information - fixed at bottom */}
-          <div className={`p-4 mx-4 mb-4 rounded-lg shadow-sm ${darkMode ? 'bg-gray-700/50' : 'bg-gray-200/50'}`}>
+            {/* Footer information - fixed at bottom */}          <div className={`p-4 mx-4 mb-4 rounded-lg shadow-sm ${darkMode ? 'bg-gray-700/50' : 'bg-blue-100'}`}>
             <p className="text-sm font-medium">Task Management System</p>
-            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>
               {new Date().toLocaleDateString()}
             </p>
           </div>

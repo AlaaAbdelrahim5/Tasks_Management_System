@@ -1,44 +1,33 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaSun, FaMoon } from "react-icons/fa";
-import { ThemeContext } from "../App";
+import { ThemeContext, AuthContext } from "../App";
 
 const Header = () => {
   const { darkMode, toggleDarkMode } = useContext(ThemeContext);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
+  const { isLoggedIn, setIsLoggedIn, currentUser, setCurrentUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  // Track window resize
   useEffect(() => {
-    const checkLoginStatus = () => {
-      const user = localStorage.getItem("user");
-      if (user) {
-        const userData = JSON.parse(user);
-        setIsLoggedIn(true);
-        setUsername(userData.username || "");
-      } else {
-        setIsLoggedIn(false);
-        setUsername("");
-      }
-    };
-
-    checkLoginStatus();
-  }, [location]);
-
-  const logout = () => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);const logout = () => {
+    // Remove both user data and stay logged in preference
     localStorage.removeItem("user");
+    localStorage.removeItem("stayLoggedIn");
+    sessionStorage.removeItem("isCurrentSession");
     setIsLoggedIn(false);
-    setUsername("");
+    setCurrentUser(null);
     navigate("/login");
-    window.location.reload(); // Force a full page refresh to update all states
-  };
-
-  return (
+  };  return (
     <header
-      className={`fixed top-0 left-0 right-0 flex flex-wrap justify-between items-center py-3 px-5 shadow-md z-10 ${
-        darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
-      }`}
+      className={`fixed top-0 right-0 flex flex-wrap justify-between items-center py-2 px-5 shadow-md z-10 
+        ${windowWidth >= 768 ? 'left-64' : 'left-0'} 
+        ${darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"}`}
     >
       <nav className="flex items-center">
         <button
@@ -81,12 +70,11 @@ const Header = () => {
             </Link>
           </>
         ) : (
-          <>
-            <h1
+          <>            <h1
               id="index-username"
               className="font-medium text-center w-full sm:w-auto"
             >
-              {username}
+              {currentUser?.username || ''}
             </h1>
             <button
               id="logout"

@@ -61,10 +61,10 @@ const SignUp = () => {
     }
   };
   
-
   return (
-    <div className={`flex items-center justify-center min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-100'} px-4 sm:px-6 lg:px-8`}>
-      <div className={`p-5 sm:p-8 rounded-xl shadow-md w-full max-w-md mx-auto ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+    <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-gradient-to-b from-gray-900 to-gray-800' : 'bg-gradient-to-b from-blue-50 to-gray-100'} px-4 sm:px-6 lg:px-8`}>
+      <h2 className="text-3xl font-bold mb-6 text-center">Task Management System</h2>
+      <div className={`p-5 sm:p-8 rounded-xl shadow-lg border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white/90 border-gray-200'} w-full max-w-md mx-auto backdrop-blur-sm`}>
         <h3 className={`text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
           Sign Up
         </h3>
@@ -170,19 +170,17 @@ const SignUp = () => {
                 onChange={(e) => setUniversityId(e.target.value)}
               />
             </div>
-          )}
-
-          <button
+          )}          <button
             type="submit"
-            className={`w-full py-2 rounded-md hover:bg-blue-700 transition text-sm sm:text-base mt-2 sm:mt-4 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              darkMode ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
+            className={`w-full py-3 rounded-md font-medium shadow-md hover:shadow-lg transition duration-300 transform hover:scale-[1.01] text-sm sm:text-base mt-2 sm:mt-4 focus:outline-none ${
+              darkMode ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
             }`}
           >
             Sign Up
           </button>
         </form>
 
-        <div className={`mt-3 sm:mt-4 text-xs sm:text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        <div className={`mt-6 text-xs sm:text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           Already have an account?{" "}
           <Link 
             to="/login" 
