@@ -71,10 +71,10 @@ const Sidebar = () => {
             <h3 className="font-semibold text-white text-lg">Task Management</h3>
           </div>
         )}<div className="flex flex-col overflow-hidden h-[calc(100%-56px)]">
-          <div className="flex-1 p-5 overflow-y-auto">
-            <nav className="flex flex-col space-y-3">
+          <div className="flex-1 p-5 overflow-y-auto">            <nav className="flex flex-col space-y-3">
               <NavLink
-                to="/home"
+                to="/"
+                end
                 className={navLinkClass}
                 onClick={() => windowWidth < 768 && setIsMobileMenuOpen(false)}
               >
