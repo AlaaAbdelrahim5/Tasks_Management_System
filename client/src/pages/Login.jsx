@@ -66,12 +66,9 @@ const Login = () => {
       alert("Login failed: " + err.message);
     }
   };
-  
-
-  return (
+    return (
     <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-gradient-to-b from-gray-900 to-gray-800' : 'bg-gradient-to-b from-blue-50 to-gray-100'} px-4 sm:px-6 lg:px-8`}>
-      <h2 className="text-3xl font-bold mb-6 text-center">Task Management System</h2>
-      <div className={`p-6 sm:p-8 rounded-xl shadow-lg border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white/90 border-gray-200'} w-full max-w-sm sm:max-w-md backdrop-blur-sm`}>
+      <div className={`p-6 sm:p-8 rounded-xl shadow-lg border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white/90 border-gray-200'} w-full max-w-sm sm:max-w-md backdrop-blur-sm mt-8`}>
         <h3 className={`text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
           Login
         </h3>

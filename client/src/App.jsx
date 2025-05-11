@@ -99,16 +99,22 @@ function App() {
           <Route path="/home" element={<ProtectedRoute element={<Home />} />} />
           <Route path="/projects" element={<ProtectedRoute element={<Projects />} />} />
           <Route path="/tasks" element={<ProtectedRoute element={<Tasks />} />} />
-          <Route path="/chat" element={<ProtectedRoute element={<Chat />} />} /><Route path="/login" element={
-            <div className="h-screen w-screen overflow-hidden bg-gradient-to-b from-blue-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-              {!isLoggedIn ? <Login /> : <Navigate to="/home" />}
-            </div>
+          <Route path="/chat" element={<ProtectedRoute element={<Chat />} />} />          <Route path="/login" element={
+            <>
+              <Header />
+              <div className="min-h-screen w-full overflow-y-auto">
+                {!isLoggedIn ? <Login /> : <Navigate to="/home" />}
+              </div>
+            </>
           } />
           <Route path="/signup" element={
-            <div className="h-screen w-screen overflow-hidden bg-gradient-to-b from-blue-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-              {!isLoggedIn ? <SignUp /> : <Navigate to="/home" />}
-            </div>
-          } />        </Routes>
+            <>
+              <Header />
+              <div className="min-h-screen w-full overflow-y-auto">
+                {!isLoggedIn ? <SignUp /> : <Navigate to="/home" />}
+              </div>
+            </>
+          } /></Routes>
       </BrowserRouter>
       </AuthContext.Provider>
     </ThemeContext.Provider>

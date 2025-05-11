@@ -54,10 +54,9 @@ const Sidebar = () => {
               : 'w-80 -translate-x-full mt-0'
           }
         `}
-      >
-        {/* Mobile sidebar header */}        {windowWidth < 768 && (
+      >        {/* Mobile sidebar header */}        {windowWidth < 768 && (
           <div className={`p-4 flex items-center justify-between border-b ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-300 bg-blue-700'}`}>
-            <h3 className="font-medium text-lg text-white">Task Management</h3>
+            <h3 className={`font-medium text-lg text-white`}>Task Management</h3>
             <button 
               onClick={toggleMobileMenu}
               className="p-2 rounded-full text-white hover:bg-white/20"
@@ -68,7 +67,7 @@ const Sidebar = () => {
         )}{/* Desktop sidebar header - only shown on desktop */}
         {windowWidth >= 768 && (
           <div className={`py-5 px-5 flex items-center justify-start ${darkMode ? 'bg-gray-900' : 'bg-blue-700'}`}>
-            <h3 className="font-semibold text-white text-lg">Task Management</h3>
+            <h3 className={`font-semibold text-lg text-white`}>Task Management</h3>
           </div>
         )}<div className="flex flex-col overflow-hidden h-[calc(100%-56px)]">
           <div className="flex-1 p-5 overflow-y-auto">            <nav className="flex flex-col space-y-3">
@@ -111,7 +110,7 @@ const Sidebar = () => {
             </nav>
           </div>
             {/* Footer information - fixed at bottom */}          <div className={`p-4 mx-4 mb-4 rounded-lg shadow-sm ${darkMode ? 'bg-gray-700/50' : 'bg-blue-100'}`}>
-            <p className="text-sm font-medium">Task Management System</p>
+            <p className={`text-sm font-medium ${darkMode ? 'text-white' : ''}`}>Task Management System</p>
             <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-700'}`}>
               {new Date().toLocaleDateString()}
             </p>
