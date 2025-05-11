@@ -34,15 +34,13 @@ const TaskForm = ({
     e.preventDefault();
     onSave(data);
   };
-
   const bgForm = darkMode ? "bg-gray-800 text-white" : "bg-white text-black";
-  const bgOverlay = darkMode ? "bg-black bg-opacity-40" : "bg-white bg-opacity-60";
   const fieldBg = darkMode
     ? "bg-gray-700 border-gray-600 placeholder-gray-300 text-gray-100"
     : "bg-gray-100 border-gray-200 placeholder-gray-600 text-gray-800";
 
   return (
-    <div className={`fixed inset-0 flex items-center justify-center z-50 ${bgOverlay}`}>
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-transparent">
       <form
         onSubmit={submit}
         className={`p-6 rounded-lg shadow-lg w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl border ${bgForm} ${

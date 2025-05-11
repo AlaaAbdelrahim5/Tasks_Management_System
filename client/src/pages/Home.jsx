@@ -101,29 +101,27 @@ const Home = () => {
         <p className={`text-lg mt-4 sm:mt-0 text-center sm:text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
           {dateTime}
         </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <b className="block mb-2">Number of <br /> Projects</b>
-          <span>{projectCount}</span>
+      </div>      <div className={`grid grid-cols-1 ${isStudent ? 'sm:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4'} gap-6 mb-8`}>
+        <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+          <b className="block mb-3 text-lg">Number of <br /> Projects</b>
+          <span className="text-2xl font-bold">{projectCount}</span>
         </div>
 
         {!isStudent && (
-          <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <b className="block mb-2">Number of <br /> Students</b>
-            <span>{studentCount}</span>
+          <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+            <b className="block mb-3 text-lg">Number of <br /> Students</b>
+            <span className="text-2xl font-bold">{studentCount}</span>
           </div>
         )}
 
-        <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <b className="block mb-2">Number of <br /> Tasks</b>
-          <span>{taskCount}</span>
+        <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+          <b className="block mb-3 text-lg">Number of <br /> Tasks</b>
+          <span className="text-2xl font-bold">{taskCount}</span>
         </div>
 
-        <div className={`p-4 rounded shadow text-center ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-          <b className="block mb-2">Number of <br /> Finished Projects</b>
-          <span>{finishedProjectCount}</span>
+        <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+          <b className="block mb-3 text-lg">Number of <br /> Finished Projects</b>
+          <span className="text-2xl font-bold">{finishedProjectCount}</span>
         </div>
       </div>
 

@@ -25,16 +25,14 @@ const AddTaskForm = ({ onClose, onSubmit }) => {
     e.preventDefault();
     onSubmit(formData);
     onClose();
-  };
-
-  const overlayBg = darkMode ? "bg-black/30" : "bg-white/30";
+  };  // Use only form styling, no background overlay
   const formBg = darkMode ? "bg-gray-800 text-gray-100 border-gray-700" : "bg-white text-gray-800 border-gray-100";
   const fieldBg = darkMode
     ? "bg-gray-700 border-gray-600 placeholder-gray-300 text-gray-100"
     : "bg-gray-50 border-gray-200 placeholder-gray-600 text-gray-800";
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center ${overlayBg}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'transparent' }}>
       <form
         onSubmit={handleSubmit}
         className={`p-8 rounded-2xl shadow-xl w-full max-w-md border ${formBg} transition-colors`}

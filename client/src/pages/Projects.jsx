@@ -12,7 +12,6 @@ const Projects = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [selectedProject, setSelectedProject] = useState(null);
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -22,6 +21,8 @@ const Projects = () => {
     endDate: "",
     status: "In Progress",
   });
+  
+  const [dateError, setDateError] = useState("");
 
   const user = JSON.parse(localStorage.getItem("user"));
   const currentUsername = user?.username;
@@ -78,15 +79,43 @@ const Projects = () => {
         );
       })
       .catch((err) => console.error("Failed to fetch projects", err));
-  }, []);
-
-  const handleInputChange = (e) => {
+  }, []);  const handleInputChange = (e) => {
     const { name, value, selectedOptions } = e.target;
+    
     if (name === "students") {
       const values = Array.from(selectedOptions).map((opt) => opt.value);
       setFormData((prev) => ({ ...prev, students: values }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+      
+      // Reset date error when changing fields
+      setDateError("");
+      
+      // If this is the end date field, validate against the start date
+      if (name === "endDate" && formData.startDate) {
+        const startDate = new Date(formData.startDate);
+        const endDate = new Date(value);
+        
+        if (endDate < startDate) {
+          setDateError("Due date cannot be earlier than start date");
+          e.target.setCustomValidity("Due date cannot be earlier than start date");
+        } else {
+          e.target.setCustomValidity("");
+        }
+      }
+      
+      // If this is the start date field and we have an end date, validate
+      if (name === "startDate" && formData.endDate) {
+        const startDate = new Date(value);
+        const endDate = new Date(formData.endDate);
+        
+        if (endDate < startDate) {
+          setDateError("Start date must be before due date");
+          e.target.setCustomValidity("Start date cannot be later than due date");
+        } else {
+          e.target.setCustomValidity("");
+        }
+      }
     }
   };
 
@@ -121,9 +150,18 @@ const Projects = () => {
       alert("Error deleting project.");
     }
   };
-
   const handleAddProject = async (e) => {
     e.preventDefault();
+    
+    // Validate that due date is not before start date
+    const startDate = new Date(formData.startDate);
+    const endDate = new Date(formData.endDate);
+    
+    if (endDate < startDate) {
+      alert("Due date cannot be earlier than start date. Please select a valid date range.");
+      return;
+    }
+    
     const query = `
       mutation AddProject($projectInput: ProjectInput!) {
         addProject(projectInput: $projectInput) {
@@ -178,16 +216,13 @@ const Projects = () => {
       statusFilter === "All Status" || p.status === statusFilter;
     return matchSearch && matchStatus;
   });
-
   const fieldClass = `w-full p-2 mb-3 rounded border transition-colors focus:outline-none focus:ring-2 ${
     darkMode
       ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500"
       : "bg-gray-50 border-gray-200 text-gray-800 focus:ring-blue-300"
   }`;
 
-  const overlayBg = darkMode
-    ? "bg-gray-900 bg-opacity-70"
-    : "bg-gray-500 bg-opacity-40";
+  // Removed overlay background to make it transparent
   const formBg = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800";
   const formBorder = darkMode ? "border-gray-700" : "border-gray-200";
 
@@ -240,12 +275,11 @@ const Projects = () => {
             <option>On Hold</option>
             <option>Cancelled</option>
           </select>
-        </div>
-
-        {/* Form for admin only */}
+        </div>        {/* Form for admin only */}
         {showForm && (
-          <div className={`fixed inset-0 flex items-center justify-center z-50 ${overlayBg}`}>
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-transparent pointer-events-none">
             <form
+              style={{ pointerEvents: 'auto' }}
               onSubmit={handleAddProject}
               className={`p-6 rounded shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto border ${formBg} ${formBorder} transition-colors`}
             >
@@ -267,9 +301,27 @@ const Projects = () => {
                 <option>Data Science</option>
                 <option>Machine Learning</option>
                 <option>Other</option>
-              </select>
-              <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} className={fieldClass} required />
-              <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} className={fieldClass} required />
+              </select>              <input 
+                type="date" 
+                name="startDate" 
+                value={formData.startDate} 
+                onChange={handleInputChange} 
+                className={`${fieldClass} ${dateError && dateError.includes('Start date') ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                required 
+              />
+              <input 
+                type="date" 
+                name="endDate" 
+                value={formData.endDate} 
+                onChange={handleInputChange} 
+                className={`${fieldClass} ${dateError && dateError.includes('Due date') ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                required 
+              />
+              {dateError && (
+                <div className={`text-red-500 text-sm mb-3 ${darkMode ? 'bg-gray-700' : 'bg-red-50'} p-2 rounded`}>
+                  ⚠️ {dateError}
+                </div>
+              )}
               <select name="status" value={formData.status} onChange={handleInputChange} className={fieldClass}>
                 <option>In Progress</option>
                 <option>Completed</option>
@@ -278,8 +330,14 @@ const Projects = () => {
                 <option>Cancelled</option>
               </select>
 
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setShowForm(false)} className={`px-4 py-2 rounded font-medium transition-colors ${darkMode ? "bg-red-600 text-white hover:bg-red-500" : "bg-red-500 text-white hover:bg-red-600"}`}>
+              <div className="flex justify-end gap-2">                <button 
+                  type="button" 
+                  onClick={() => {
+                    setShowForm(false);
+                    setDateError("");
+                  }} 
+                  className={`px-4 py-2 rounded font-medium transition-colors ${darkMode ? "bg-red-600 text-white hover:bg-red-500" : "bg-red-500 text-white hover:bg-red-600"}`}
+                >
                   Cancel
                 </button>
                 <button type="submit" className={`px-4 py-2 rounded font-medium transition-colors ${darkMode ? "bg-green-600 text-white hover:bg-green-500" : "bg-green-500 text-white hover:bg-green-600"}`}>
@@ -288,9 +346,7 @@ const Projects = () => {
               </div>
             </form>
           </div>
-        )}
-
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        )}        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProjects.map((project) => {
   const getProgress = (startDate, endDate) => {
     const start = new Date(startDate);
@@ -304,7 +360,7 @@ const Projects = () => {
   };
 
   return (
-    <div key={project.id} onClick={() => setSelectedProject(project)}>
+    <div key={project.id} onClick={() => setSelectedProject(project)} className="h-full">
       <ProjectCard
         project={{ ...project, progress: getProgress(project.startDate, project.endDate) }}
         darkMode={darkMode}
