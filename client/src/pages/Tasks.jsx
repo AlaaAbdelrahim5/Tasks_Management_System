@@ -45,12 +45,12 @@ const Tasks = () => {
     const query = isStudent
       ? `query {
           getStudentTasks(username: "${currentUsername}") {
-            id taskId project name description assignedStudent status dueDate
+            id project name description assignedStudent status dueDate
           }
         }`
       : `query {
           getTasks {
-            id taskId project name description assignedStudent status dueDate
+            id project name description assignedStudent status dueDate
           }
         }`;
 
@@ -89,7 +89,6 @@ const Tasks = () => {
         assignedStudent: task.assignedStudent,
         status: task.status,
         dueDate: task.dueDate,
-        taskId: task.taskId,
       });
       const proj = projects.find((p) => p.title === task.project);
       if (proj) fetchStudents(proj.id);
@@ -137,7 +136,7 @@ const Tasks = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: mutation,
-          variables: { input: { ...data, taskId: `${tasks.length + 1}` } },
+          variables: { input: data },
         }),
       });
     }
@@ -250,7 +249,7 @@ const Tasks = () => {
           <tbody>
             {[...tasks].sort(handleSort).map((task) => (
               <tr key={task.id} className={darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"}>
-                <td className={tdClass}>{task.taskId}</td>
+                <td className={tdClass}>{task.id}</td>
                 <td className={tdClass}>{task.project}</td>
                 <td className={tdClass}>{task.name}</td>
                 <td className={tdClass}>{task.description}</td>

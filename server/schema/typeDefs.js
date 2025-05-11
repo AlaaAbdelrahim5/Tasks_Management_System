@@ -10,27 +10,25 @@ module.exports = gql`
   }
 
   type Project {
-    id: ID!
-    title: String!
-    description: String!
-    students: [String]
-    category: String!
-    startDate: String!
-    endDate: String!
-    status: String!
-  }
+  id: Int!
+  title: String!
+  description: String!
+  students: [String]
+  category: String!
+  startDate: String!
+  endDate: String!
+  status: String!
+}
 
-  type Task {
-    id: ID!
-    taskId: String!
-    project: String!
-    name: String!
-    description: String!
-    assignedStudent: String!
-    status: String!
-    dueDate: String!
-  }
-
+type Task {
+  id: Int!
+  project: String!
+  name: String!
+  description: String!
+  assignedStudent: String!
+  status: String!
+  dueDate: String!
+}
   type Message {
     id: ID!
     sender: String!
@@ -47,25 +45,24 @@ module.exports = gql`
     universityId: String
   }
 
-  input ProjectInput {
-    title: String!
-    description: String!
-    students: [String]
-    category: String!
-    startDate: String!
-    endDate: String!
-    status: String!
-  }
+ input ProjectInput {
+  title: String!
+  description: String!
+  students: [String]
+  category: String!
+  startDate: String!
+  endDate: String!
+  status: String!
+}
 
-  input TaskInput {
-    taskId: String!
-    project: String!
-    name: String!
-    description: String!
-    assignedStudent: String!
-    status: String!
-    dueDate: String!
-  }
+input TaskInput {
+  project: String!
+  name: String!
+  description: String!
+  assignedStudent: String!
+  status: String!
+  dueDate: String!
+}
 
   type Query {
     getProjects: [Project]

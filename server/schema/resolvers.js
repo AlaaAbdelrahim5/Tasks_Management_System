@@ -30,7 +30,7 @@ module.exports = {
     },
 
     updateTask: async (_, { id, taskInput }) => {
-      const updatedTask = await Task.findByIdAndUpdate(id, taskInput, {
+      const updatedTask = await Task.findOneAndUpdate({ id: Number(id) }, taskInput, {
         new: true,
       });
       if (!updatedTask) throw new Error("Task not found");
@@ -38,14 +38,14 @@ module.exports = {
     },
 
     deleteTask: async (_, { id }) => {
-      const deletedTask = await Task.findByIdAndDelete(id);
+      const deletedTask = await Task.findOneAndDelete({ id: Number(id) });
       if (!deletedTask) throw new Error("Task not found");
       return deletedTask;
     },
 
     updateTaskStatus: async (_, { id, status }) => {
-      const updatedTask = await Task.findByIdAndUpdate(
-        id,
+      const updatedTask = await Task.findOneAndUpdate(
+        { id: Number(id) },
         { status },
         { new: true }
       );
@@ -95,20 +95,25 @@ module.exports = {
     },
 
     addProject: async (_, { projectInput }) => {
-      const project = new Project(projectInput);
-      return await project.save();
-    },
+  const existing = await Project.findOne({ title: projectInput.title });
+  if (existing) {
+    throw new Error("Project title already exists");
+  }
+
+  const project = new Project(projectInput);
+  return await project.save();
+},
+
 
     deleteProject: async (_, { id }) => {
-      const project = await Project.findById(id);
+      const project = await Project.findOne({ id: Number(id) });
       if (!project) throw new Error("Project not found");
-    
-      await Task.deleteMany({ project: project.title }); // ✅ Match by title
-      await Project.findByIdAndDelete(id);
-    
+
+      await Task.deleteMany({ project: project.title });
+      await Project.findOneAndDelete({ id: Number(id) });
+
       return "Project and related tasks deleted.";
     },
-    
 
     sendMessage: async (_, { sender, receiver, content }) => {
       const message = new Message({ sender, receiver, content });
