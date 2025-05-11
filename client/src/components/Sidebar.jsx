@@ -66,7 +66,7 @@ const Sidebar = () => {
           </div>
         )}{/* Desktop sidebar header - only shown on desktop */}
         {windowWidth >= 768 && (
-          <div className={`py-5 px-5 flex items-center justify-start ${darkMode ? 'bg-gray-900' : 'bg-blue-700'}`}>
+          <div className={`py-5 px-5 flex items-center justify-start ${darkMode ? 'bg-gray-800' : 'bg-blue-700'}`}>
             <h3 className={`font-semibold text-lg text-white`}>Task Management</h3>
           </div>
         )}<div className="flex flex-col overflow-hidden h-[calc(100%-56px)]">

@@ -1,5 +1,6 @@
 import React, { useState, useContext } from "react";
 import { ThemeContext } from "../App";
+import { FaProjectDiagram, FaTasks, FaRegCalendarAlt, FaUserAlt, FaClock } from "react-icons/fa";
 
 const AddTaskForm = ({ onClose, onSubmit }) => {
   const { darkMode } = useContext(ThemeContext);
@@ -25,78 +26,92 @@ const AddTaskForm = ({ onClose, onSubmit }) => {
     e.preventDefault();
     onSubmit(formData);
     onClose();
-  };  // Use only form styling, no background overlay
+  };
+  
   const formBg = darkMode ? "bg-gray-800 text-gray-100 border-gray-700" : "bg-white text-gray-800 border-gray-100";
   const fieldBg = darkMode
-    ? "bg-gray-700 border-gray-600 placeholder-gray-300 text-gray-100"
-    : "bg-gray-50 border-gray-200 placeholder-gray-600 text-gray-800";
+    ? "bg-gray-700 border-gray-600 placeholder-gray-300 text-white"
+    : "bg-gray-50 border-gray-200 placeholder-gray-500 text-gray-800";
+  const labelColor = darkMode ? "text-gray-300" : "text-gray-600";
+  const accentColor = "blue";  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="w-full max-w-md p-1 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl">
+        <form
+          onSubmit={handleSubmit}
+          className={`p-6 rounded-xl shadow-xl w-full ${formBg} transition-all duration-300`}
+        >
+          <h2 className="text-2xl font-bold text-center mb-6">
+            Create New Task
+            <div className="mt-2 w-20 h-1 bg-blue-500 mx-auto rounded-full" />
+          </h2>
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'transparent' }}>
-      <form
-        onSubmit={handleSubmit}
-        className={`p-8 rounded-2xl shadow-xl w-full max-w-md border ${formBg} transition-colors`}
-      >
-        <h2 className="text-2xl font-bold text-center mb-8">
-          Create New Task
-          <div className="mt-2 w-12 h-1 bg-blue-500 mx-auto rounded-full" />
-        </h2>
-
-        <div className="space-y-5">
-          {[
-            { label: "Project", name: "project", type: "text" },
-            { label: "Task Name", name: "name", type: "text" },
-            { label: "Description", name: "description", type: "textarea" },
-          ].map(({ label, name, type }) => (
-            <div key={name}>
-              <label className={`block mb-2 text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-                {label}
-              </label>
-              {type === "textarea" ? (
-                <textarea
-                  name={name}
-                  value={formData[name]}
-                  onChange={handleChange}
-                  rows="4"
-                  placeholder={`Enter ${label.toLowerCase()}...`}
-                  className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-blue-500" : "focus:ring-blue-100"} transition-all`}
-                />
-              ) : (
-                <input
-                  type="text"
-                  name={name}
-                  value={formData[name]}
-                  onChange={handleChange}
-                  placeholder={`Enter ${label.toLowerCase()}...`}
-                  className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-blue-500" : "focus:ring-blue-100"} transition-all`}
-                />
-              )}
+          <div className="space-y-5">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+                <FaProjectDiagram />
+              </div>
+              <input
+                type="text"
+                name="project"
+                value={formData.project}
+                onChange={handleChange}
+                placeholder="Enter project name..."
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+              />
+              <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Project</label>
             </div>
-          ))}
-
-          <div>
-            <label className={`block mb-2 text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-              Assigned Student
-            </label>
+            
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+                <FaTasks />
+              </div>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter task name..."
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+              />
+              <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Task Name</label>
+            </div>
+              <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 pt-3 flex items-start pointer-events-none text-blue-500">
+                <FaRegCalendarAlt />
+              </div>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows="4"
+                placeholder="Describe the task..."
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+              />
+              <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Description</label>
+            </div>          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+              <FaUserAlt />
+            </div>
             <input
               type="text"
               name="student"
               value={formData.assignedStudents[0] || ""}
               onChange={handleChange}
               placeholder="Enter student username..."
-              className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-blue-500" : "focus:ring-blue-100"} transition-all`}
+              className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
             />
+            <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Assigned Student</label>
           </div>
 
-          <div>
-            <label className={`block mb-2 text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-              Status
-            </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+              <FaClock />
+            </div>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-blue-500" : "focus:ring-blue-100"} transition-all`}
+              className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
             >
               <option>In Progress</option>
               <option>Completed</option>
@@ -104,19 +119,19 @@ const AddTaskForm = ({ onClose, onSubmit }) => {
               <option>On Hold</option>
               <option>Cancelled</option>
             </select>
-          </div>
-
-          <div>
-            <label className={`block mb-2 text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-              Due Date
-            </label>
+            <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Status</label>
+          </div>          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+              <FaRegCalendarAlt />
+            </div>
             <input
               type="date"
               name="dueDate"
               value={formData.dueDate}
               onChange={handleChange}
-              className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 ${darkMode ? "focus:ring-blue-500" : "focus:ring-blue-100"} transition-all`}
+              className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
             />
+            <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Due Date</label>
           </div>
         </div>
 

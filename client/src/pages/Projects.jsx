@@ -215,16 +215,13 @@ const Projects = () => {
     const matchStatus =
       statusFilter === "All Status" || p.status === statusFilter;
     return matchSearch && matchStatus;
-  });
-  const fieldClass = `w-full p-2 mb-3 rounded border transition-colors focus:outline-none focus:ring-2 ${
-    darkMode
-      ? "bg-gray-700 border-gray-600 text-gray-100 focus:ring-blue-500"
-      : "bg-gray-50 border-gray-200 text-gray-800 focus:ring-blue-300"
-  }`;
-
-  // Removed overlay background to make it transparent
+  });  // Form styling with enhanced design
+  const fieldBg = darkMode
+    ? "bg-gray-700 border-gray-600 placeholder-gray-300 text-white"
+    : "bg-gray-50 border-gray-200 placeholder-gray-500 text-gray-800";
+  const labelColor = darkMode ? "text-gray-300" : "text-gray-600";
+  const accentColor = "blue";
   const formBg = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800";
-  const formBorder = darkMode ? "border-gray-700" : "border-gray-200";
 
   return (
     <div className={`py-16 min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
@@ -277,76 +274,148 @@ const Projects = () => {
           </select>
         </div>        {/* Form for admin only */}
         {showForm && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-transparent pointer-events-none">
-            <form
-              style={{ pointerEvents: 'auto' }}
-              onSubmit={handleAddProject}
-              className={`p-6 rounded shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto border ${formBg} ${formBorder} transition-colors`}
-            >
-              <h3 className={`text-xl font-semibold mb-4 ${darkMode ? "text-blue-400" : "text-blue-800"}`}>
-                Create New Project
-              </h3>
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="w-full max-w-lg p-1 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl">
+              <form
+                onSubmit={handleAddProject}
+                className={`p-6 rounded-xl shadow-lg w-full max-h-[90vh] overflow-y-auto ${formBg} transition-all duration-300`}
+              >
+                <h2 className="text-2xl font-bold text-center mb-6">
+                  Create New Project
+                  <div className="mt-2 w-24 h-1 bg-blue-500 mx-auto rounded-full" />
+                </h2>
 
-              <input type="text" name="title" placeholder="Project Title" value={formData.title} onChange={handleInputChange} className={fieldClass} required />
-              <textarea name="description" placeholder="Project Description" value={formData.description} onChange={handleInputChange} className={fieldClass} rows={4} required />
-              <select name="students" multiple value={formData.students} onChange={handleInputChange} className={`${fieldClass} h-28`}>
-                {studentList.map((s) => (
-                  <option key={s.email} value={s.username}>{s.username}</option>
-                ))}
-              </select>
-              <select name="category" value={formData.category} onChange={handleInputChange} className={fieldClass} required>
-                <option value="">Select a Category</option>
-                <option>Web Development</option>
-                <option>Mobile Development</option>
-                <option>Data Science</option>
-                <option>Machine Learning</option>
-                <option>Other</option>
-              </select>              <input 
-                type="date" 
-                name="startDate" 
-                value={formData.startDate} 
-                onChange={handleInputChange} 
-                className={`${fieldClass} ${dateError && dateError.includes('Start date') ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                required 
-              />
-              <input 
-                type="date" 
-                name="endDate" 
-                value={formData.endDate} 
-                onChange={handleInputChange} 
-                className={`${fieldClass} ${dateError && dateError.includes('Due date') ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                required 
-              />
-              {dateError && (
-                <div className={`text-red-500 text-sm mb-3 ${darkMode ? 'bg-gray-700' : 'bg-red-50'} p-2 rounded`}>
-                  ⚠️ {dateError}
+                <div className="space-y-4">
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      name="title" 
+                      placeholder="Project Title" 
+                      value={formData.title} 
+                      onChange={handleInputChange} 
+                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+                      required 
+                    />
+                    <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Project Title</label>
+                  </div>
+
+                  <div className="relative">
+                    <textarea 
+                      name="description" 
+                      placeholder="Provide project details..." 
+                      value={formData.description} 
+                      onChange={handleInputChange} 
+                      className={`w-full p-4 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all min-h-[100px]`}
+                      rows={4}
+                      required 
+                    />
+                    <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Description</label>
+                  </div>
+
+                  <div className="relative">
+                    <select 
+                      name="students" 
+                      multiple 
+                      value={formData.students} 
+                      onChange={handleInputChange} 
+                      className={`w-full p-4 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all h-32`}
+                    >
+                      {studentList.map((s) => (
+                        <option key={s.email} value={s.username}>{s.username}</option>
+                      ))}
+                    </select>
+                    <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Assigned Students</label>
+                  </div>
+                  
+                  <div className="relative">
+                    <select 
+                      name="category" 
+                      value={formData.category} 
+                      onChange={handleInputChange} 
+                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+                      required
+                    >
+                      <option value="">Select a Category</option>
+                      <option>Web Development</option>
+                      <option>Mobile Development</option>
+                      <option>Data Science</option>
+                      <option>Machine Learning</option>
+                      <option>Other</option>
+                    </select>
+                    <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Category</label>
+                  </div>                  <div className="relative">
+                    <input 
+                      type="date" 
+                      name="startDate" 
+                      value={formData.startDate} 
+                      onChange={handleInputChange} 
+                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all ${dateError && dateError.includes('Start date') ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                      required 
+                    />
+                    <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Start Date</label>
+                  </div>
+                  
+                  <div className="relative">
+                    <input 
+                      type="date" 
+                      name="endDate" 
+                      value={formData.endDate} 
+                      onChange={handleInputChange} 
+                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all ${dateError && dateError.includes('Due date') ? 'border-red-500 focus:ring-red-500' : ''}`} 
+                      required 
+                    />
+                    <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>End Date</label>
+                  </div>
+                  
+                  {dateError && (
+                    <div className={`text-red-500 text-sm p-3 rounded-lg border border-red-400 ${darkMode ? 'bg-red-900 bg-opacity-20' : 'bg-red-50'}`}>
+                      <span className="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {dateError}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="relative">
+                    <select 
+                      name="status" 
+                      value={formData.status} 
+                      onChange={handleInputChange} 
+                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+                    >
+                      <option>In Progress</option>
+                      <option>Completed</option>
+                      <option>Pending</option>
+                      <option>On Hold</option>
+                      <option>Cancelled</option>
+                    </select>
+                    <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Status</label>
+                  </div>
                 </div>
-              )}
-              <select name="status" value={formData.status} onChange={handleInputChange} className={fieldClass}>
-                <option>In Progress</option>
-                <option>Completed</option>
-                <option>Pending</option>
-                <option>On Hold</option>
-                <option>Cancelled</option>
-              </select>
 
-              <div className="flex justify-end gap-2">                <button 
+                <div className="flex justify-end items-center gap-3 mt-8">                <button 
                   type="button" 
                   onClick={() => {
                     setShowForm(false);
                     setDateError("");
                   }} 
-                  className={`px-4 py-2 rounded font-medium transition-colors ${darkMode ? "bg-red-600 text-white hover:bg-red-500" : "bg-red-500 text-white hover:bg-red-600"}`}
+                  className={`px-5 py-2.5 rounded-lg font-medium border-2 ${darkMode ? "border-gray-600 text-gray-300 hover:bg-gray-700" : "border-gray-300 text-gray-600 hover:bg-gray-100"} transition-all duration-200`}
                 >
                   Cancel
                 </button>
-                <button type="submit" className={`px-4 py-2 rounded font-medium transition-colors ${darkMode ? "bg-green-600 text-white hover:bg-green-500" : "bg-green-500 text-white hover:bg-green-600"}`}>
-                  Add Project
+                <button 
+                  type="submit" 
+                  className={`px-5 py-2.5 rounded-lg font-medium bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200`}
+                >
+                  Create Project
                 </button>
               </div>
-            </form>
+              </form>
+            </div>
           </div>
-        )}        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        )}<div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProjects.map((project) => {
   const getProgress = (startDate, endDate) => {
     const start = new Date(startDate);
