@@ -28,13 +28,12 @@ const Tasks = () => {
     fetchProjects();
     fetchTasks();
   }, []);
-
   const fetchProjects = async () => {
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        query: `query { getProjects { id title students } }`,
+        query: `query { getProjects { id title students startDate endDate } }`,
       }),
     });
     const { data } = await res.json();

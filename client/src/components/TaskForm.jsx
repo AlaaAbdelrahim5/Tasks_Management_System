@@ -12,28 +12,97 @@ const TaskForm = ({
   onSave,
   onClose,
 }) => {
-  const { darkMode } = useContext(ThemeContext);
-  const [data, setData] = useState(initialData);
+  const { darkMode } = useContext(ThemeContext);  const [data, setData] = useState(initialData);
+  const [user, setUser] = useState(null);
+  const [userProjects, setUserProjects] = useState([]);
+  const [dateError, setDateError] = useState("");
+  const [selectedProject, setSelectedProject] = useState(null);
 
   useEffect(() => {
+    // Get logged in user from localStorage
+    const loggedInUser = JSON.parse(localStorage.getItem("user"));
+    setUser(loggedInUser);
+    
+    // If user is a student, filter projects related to this student
+    if (loggedInUser?.isStudent) {
+      const studentProjects = projects.filter(project => 
+        project.students && project.students.includes(loggedInUser.username)
+      );
+      setUserProjects(studentProjects);
+    }
+    
+    // Find selected project when initialData changes
+    if (initialData.project) {
+      const projectData = projects.find(p => p.title === initialData.project);
+      if (projectData) {
+        setSelectedProject(projectData);
+      }
+    }
+    
     setData(initialData);
-  }, [initialData]);
+  }, [initialData, projects]);
 
-  if (!show) return null;
-
-  const handleChange = e => {
+  if (!show) return null;  const handleChange = e => {
     const { name, value } = e.target;
+    
+    // If user is a student and trying to change assigned student, prevent it
+    if (user?.isStudent && name === "assignedStudent") {
+      return; // Don't allow student to change who task is assigned to
+    }
+    
+    // Update state with the new value
     setData(prev => ({ ...prev, [name]: value }));
     onFieldChange(name, value);
+    
+    // Handle project change
     if (name === "project") {
       const proj = projects.find(p => p.title === value);
-      if (proj) onProjectChange(proj.id);
+      if (proj) {
+        setSelectedProject(proj);
+        onProjectChange(proj.id);
+        
+        // If due date is already set, validate it against the new project
+        if (data.dueDate && proj.startDate) {
+          validateDueDate(data.dueDate, proj.startDate);
+        }
+      }
+    }
+    
+    // Handle due date change
+    if (name === "dueDate" && selectedProject?.startDate) {
+      validateDueDate(value, selectedProject.startDate);
     }
   };
-
+    // Function to validate that due date is not before project start date and not after project end date
+  const validateDueDate = (dueDate, startDate) => {
+    const dueDateTime = new Date(dueDate).getTime();
+    const startDateTime = new Date(startDate).getTime();
+    const endDateTime = selectedProject?.endDate ? new Date(selectedProject.endDate).getTime() : null;
+    
+    if (dueDateTime < startDateTime) {
+      setDateError(`Due date cannot be before project start date (${startDate})`);
+    } else if (endDateTime && dueDateTime > endDateTime) {
+      setDateError(`Due date cannot be after project end date (${selectedProject.endDate})`);
+    } else {
+      setDateError("");
+    }
+  };
   const submit = e => {
     e.preventDefault();
-    onSave(data);
+    
+    // Check if there are any date validation errors
+    if (dateError) {
+      alert(dateError);
+      return; // Don't submit if there's a date error
+    }
+    
+    // If user is a student, ensure task is assigned to them
+    let taskData = { ...data };
+    if (user?.isStudent) {
+      taskData.assignedStudent = user.username;
+    }
+    
+    onSave(taskData);
   };
   
   const formBg = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800";
@@ -57,15 +126,15 @@ const TaskForm = ({
             <div className="relative">
               <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-${accentColor}`}>
                 <FaProjectDiagram />
-              </div>
-              <select
+              </div>            <select
                 name="project"
                 value={data.project}
                 onChange={handleChange}
                 className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor} focus:border-transparent transition-all`}
                 required        >
               <option value="">Select Project</option>
-              {projects.map(p => (
+              {/* Show only projects the student is part of if they're a student */}
+              {(user?.isStudent ? userProjects : projects).map(p => (
                 <option key={p.id} value={p.title}>
                   {p.title}
                 </option>
@@ -104,21 +173,32 @@ const TaskForm = ({
           <div className="relative">
             <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-${accentColor}`}>
               <FaUserAlt />
-            </div>
-            <select
-              name="assignedStudent"
-              value={data.assignedStudent}
-              onChange={handleChange}
-              className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor} focus:border-transparent transition-all`}
-              required
-            >
-              <option value="">Select Student</option>
-              {students.map(s => (
-                <option key={s.username} value={s.username}>
-                  {s.username}
-                </option>
-              ))}
-            </select>
+            </div>            {user?.isStudent ? (
+              // If user is a student, make field readonly with their username
+              <input
+                type="text"
+                name="assignedStudent"
+                value={user.username}
+                readOnly
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none opacity-75`}
+              />
+            ) : (
+              // If user is not a student, show dropdown of students
+              <select
+                name="assignedStudent"
+                value={data.assignedStudent}
+                onChange={handleChange}
+                className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor} focus:border-transparent transition-all`}
+                required
+              >
+                <option value="">Select Student</option>
+                {students.map(s => (
+                  <option key={s.username} value={s.username}>
+                    {s.username}
+                  </option>
+                ))}
+              </select>
+            )}
             <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Assigned To</label>
           </div>
 
@@ -137,9 +217,7 @@ const TaskForm = ({
               ))}
             </select>
             <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Status</label>
-          </div>
-
-          <div className="relative">
+          </div>          <div className="relative">
             <div className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-${accentColor}`}>
               <FaRegCalendarAlt />
             </div>
@@ -148,10 +226,13 @@ const TaskForm = ({
               type="date"
               value={data.dueDate}
               onChange={handleChange}
-              className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor} focus:border-transparent transition-all`}
+              className={`w-full pl-10 pr-4 py-3 rounded-lg border-2 ${dateError ? "border-red-500" : fieldBg} focus:outline-none focus:ring-2 focus:ring-${dateError ? "red-500" : accentColor} focus:border-transparent transition-all`}
               required
             />
-            <label className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Due Date</label>
+            <label className={`text-xs font-medium ${dateError ? "text-red-500" : labelColor} absolute -top-2 left-2 px-1 ${formBg}`}>Due Date</label>
+            {dateError && (
+              <p className="text-red-500 text-xs mt-1">{dateError}</p>
+            )}
           </div>
           </div>
 
