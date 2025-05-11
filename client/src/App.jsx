@@ -41,12 +41,11 @@ function App() {
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
-
   const ProtectedRoute = ({ element }) =>
     isLoggedIn ? (
       <>
         <Sidebar />
-        <div className="ml-64 dark:bg-gray-900 dark:text-white">
+        <div className="md:ml-64 dark:bg-gray-900 dark:text-white">
           {element}
         </div>
       </>
