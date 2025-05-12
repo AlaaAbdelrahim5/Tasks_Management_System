@@ -11,6 +11,7 @@ const TaskForm = ({
   onProjectChange,
   onSave,
   onClose,
+  isEditing,
 }) => {
   const { darkMode } = useContext(ThemeContext);  const [data, setData] = useState(initialData);
   const [user, setUser] = useState(null);
@@ -118,7 +119,7 @@ const TaskForm = ({
           className={`p-6 rounded-xl shadow-lg w-full ${formBg} transition-all duration-300`}
         >
           <h2 className="text-2xl font-bold mb-6 text-center">
-            {data.taskId ? "Edit Task" : "Create New Task"}
+            {isEditing ? "Update Task" : "Create New Task"}
             <div className={`h-1 w-16 bg-${accentColor} mx-auto mt-2 rounded-full`}></div>
           </h2>
 
@@ -248,7 +249,7 @@ const TaskForm = ({
               type="submit"
               className={`px-5 py-2.5 rounded-lg font-medium bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200`}
             >
-              {data.taskId ? "Update Task" : "Add Task"}
+              {isEditing ? "Update Task" : "Add Task"}
             </button>
           </div>      </form>
       </div>

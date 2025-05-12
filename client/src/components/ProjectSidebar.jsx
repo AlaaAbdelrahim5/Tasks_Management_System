@@ -1,8 +1,30 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 const ProjectSidebar = ({ project, onClose, onDelete, darkMode }) => {
   const [tasks, setTasks] = useState([]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const sidebarRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Set visibility after component mounts to trigger animation
+    setTimeout(() => setIsVisible(true), 50);
+    
+    // Handle click outside to close the sidebar
+    function handleClickOutside(event) {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        onClose();
+      }
+    }
+
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
 
   useEffect(() => {
     if (!project) return;
@@ -52,7 +74,13 @@ const ProjectSidebar = ({ project, onClose, onDelete, darkMode }) => {
   const progress = getProgress(project.startDate, project.endDate);
   
   return (
-    <div className={`fixed top-0 right-0 w-full sm:w-96 h-screen flex flex-col border-l shadow-xl z-50 ${darkMode ? "bg-gray-900 border-gray-700" : "bg-gray-100 border-gray-300"}`}>
+    <div 
+      ref={sidebarRef} 
+      className={`fixed top-16 right-0 w-full sm:w-96 h-[calc(100vh-4rem)] flex flex-col shadow-xl z-50 
+        ${darkMode ? "bg-gray-900 border-l border-gray-700" : "bg-gray-100 border-l border-gray-300"}
+        transition-all duration-300 ease-in-out transform
+        ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-10 opacity-0"}`}
+    >
       {/* Fixed Header */}
       <div className={`sticky top-0 z-10 bg-gradient-to-r ${darkMode ? "from-blue-950 to-purple-950" : "from-blue-600 to-purple-700"} text-white px-4 py-3`}>
         <div className="flex justify-between items-center">
