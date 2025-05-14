@@ -56,3 +56,111 @@ body {
     background-color: #2d3748;
     color: #f7fafc;
 }
+
+/* Chat message animations */
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Animation classes for messages */
+.message-received {
+    animation: fadeInLeft 0.3s ease forwards;
+}
+
+.message-sent {
+    animation: fadeInRight 0.3s ease forwards;
+}
+
+/* Enhanced scrollbar for chat */
+.chat-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(107, 114, 128, 0.3);
+    border-radius: 10px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.5);
+}
+
+/* Message bubble hover effect */
+.chat-bubble {
+    transition: transform 0.2s ease;
+}
+
+.chat-bubble:hover {
+    transform: scale(1.01);
+}
+
+/* Close button animation */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.close-chat-btn {
+    transition: all 0.2s ease;
+}
+
+.close-chat-btn:hover {
+    animation: pulse 1s infinite;
+}
+
+/* Mobile chat transitions */
+.mobile-chat-enter {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.mobile-chat-enter-active {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 300ms, transform 300ms;
+}
+
+.mobile-chat-exit {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.mobile-chat-exit-active {
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 300ms, transform 300ms;
+}
+
+/* Mobile floating button pulse */
+@keyframes floatingPulse {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.mobile-chat-nav {
+    animation: floatingPulse 2s infinite;
+}

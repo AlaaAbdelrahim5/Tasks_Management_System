@@ -60,7 +60,7 @@ const Header = () => {
             <Link to="/login">
               <button
                 id="loginBtnHeader"
-                className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-1.5 text-sm rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md flex items-center gap-2 ${
+                className={`bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 text-sm rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md flex items-center gap-2 ${
                   location.pathname === '/login' ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
                 disabled={location.pathname === '/login'}
@@ -71,7 +71,7 @@ const Header = () => {
             <Link to="/signup">
               <button
                 id="signUpBtnHeader"
-                className={`px-4 py-1.5 text-sm rounded-lg transition-all duration-300 shadow-md flex items-center gap-2 ${
+                className={`px-4 py-2 text-sm rounded-lg transition-all duration-300 shadow-md flex items-center gap-2 ${
                   darkMode
                     ? "bg-gray-700 text-white hover:bg-gray-600"
                     : "bg-gray-200 hover:bg-gray-300 text-gray-800"
@@ -98,7 +98,7 @@ const Header = () => {
             <button
               id="logout"
               onClick={logout}
-              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-1.5 text-sm rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md flex items-center gap-2"
+              className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 text-sm rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md flex items-center gap-2"
             >
               <FaSignOutAlt /> Logout
             </button>
