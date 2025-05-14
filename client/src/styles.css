@@ -6,6 +6,9 @@
     --sidebar-bg: #2d3748;
     --sidebar-header-bg: #111827;
     --card-bg: #2d3748;
+    --scrollbar-thumb: #4b5563;
+    --scrollbar-track: #1f2937;
+    --scrollbar-hover: #6B7280;
 }
 
 /* Light mode styles */
@@ -15,6 +18,30 @@
     --sidebar-bg: #ffffff;
     --card-bg: #ffffff;
     --sidebar-header-bg: #3b82f6;
+    --scrollbar-thumb: #cbd5e1;
+    --scrollbar-track: #f1f5f9;
+    --scrollbar-hover: #94a3b8;
+}
+
+/* Scrollbar Styling */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background-color: var(--scrollbar-track);
+    border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-hover);
 }
 
 /* Apply these variables to your elements */

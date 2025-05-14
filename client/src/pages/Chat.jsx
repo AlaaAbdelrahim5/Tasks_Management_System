@@ -250,11 +250,10 @@ const Chat = () => {
       handleSend();
     }
   };
-
   return (
     <div className={`flex flex-col h-screen pt-16 ${darkMode ? "bg-gray-900 text-gray-200" : "bg-white text-gray-800"}`}>
       {/* Chat container with fixed height */}
-      <div className="flex flex-col md:flex-row flex-1 p-4 gap-6 overflow-hidden">
+      <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-6 overflow-hidden">
         {/* New message notification */}
         {newMessageNotification && (
           <div className={`fixed top-24 right-4 p-4 rounded-lg shadow-lg z-50 animate-bounce 
@@ -277,20 +276,18 @@ const Chat = () => {
           </div>
         )}
 
-        {/* Users sidebar - fixed height with scrolling */}
-        <div
-          className={`w-full md:w-64 p-4 rounded-lg shadow-lg flex flex-col h-full ${
-            darkMode ? "bg-gray-800 border-gray-700" : "bg-white border border-gray-200"
+        {/* Users sidebar - fixed height with scrolling */}          <div
+          className={`w-full md:w-72 p-4 rounded-lg shadow-lg flex flex-col h-full ${
+            darkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
           }`}
-        >
-          <h2
+        ><h2
             className={`text-lg font-bold mb-4 ${
               darkMode ? "text-white" : "text-gray-800"
             }`}
           >
             Users You Can Chat With
           </h2>
-          <div className="space-y-2 overflow-y-auto flex-1">
+          <div className="space-y-2 overflow-y-auto flex-1 custom-scrollbar pr-1">
             {students.map((user, i) => (
               <div
                 key={i}
@@ -353,33 +350,30 @@ const Chat = () => {
             ) : (
               <span>Select a user to start chatting</span>
             )}
-          </div>
-
-          {/* Messages area - scrollable */}
+          </div>          {/* Messages area - scrollable */}
           <div
             ref={messageContainerRef}
-            className={`flex-1 p-4 overflow-y-auto ${
+            className={`flex-1 p-4 overflow-y-auto custom-scrollbar ${
               darkMode
                 ? "bg-gray-900 text-gray-200"
                 : "bg-gray-50 text-gray-800"
             }`}
           >
             <div className="space-y-3">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}                  className={`p-3 rounded-lg max-w-xs ${
+              {messages.map((msg) => (                <div
+                  key={msg.id}                  className={`p-3 rounded-lg max-w-xs md:max-w-sm ${
                     msg.sender === user.email
                       ? "ml-auto " +
                         (darkMode
-                          ? "bg-blue-600 text-white"
-                          : "bg-blue-500 text-white")
+                          ? "bg-blue-600 text-white shadow-md"
+                          : "bg-blue-500 text-white shadow-md")
                       : darkMode
-                      ? "bg-gray-700"
-                      : "bg-blue-100"
+                      ? "bg-gray-700 shadow-sm"
+                      : "bg-blue-100 shadow-sm"
                   }`}
                 >
                   <div className="flex flex-col">
-                    {msg.content}
+                    <div className="break-words">{msg.content}</div>
                     <span className="text-xs opacity-70 mt-1 text-right">
                       {new Date(parseInt(msg.timestamp)).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </span>
