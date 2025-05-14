@@ -32,7 +32,7 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 right-0 flex justify-between items-center py-3 px-6 shadow-lg z-10 
+      className={`fixed top-0 right-0 flex justify-between items-center py-4 px-6 shadow-lg z-10 
         ${!isAuthPage && windowWidth >= 768 ? 'left-64' : 'left-0'} 
         ${darkMode 
           ? "bg-gradient-to-r from-gray-800 to-gray-900 text-white" 

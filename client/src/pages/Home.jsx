@@ -89,18 +89,16 @@ const Home = () => {
     const interval = setInterval(() => {
       setDateTime(formatDateTime());
     }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-  return (
+    return () => clearInterval(interval);  }, []);  return (
     <div className={`p-4 min-h-screen pt-16 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
-      <div className="mb-8 flex flex-col sm:flex-row justify-between items-center">
+      <div className="mt-4 mb-8 flex flex-col sm:flex-row justify-between items-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">
-          Welcome to the Task Management System
+          <span className={`${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Welcome to the Task Management System</span>
         </h2>
         <p className={`text-lg mt-4 sm:mt-0 text-center sm:text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
           {dateTime}
         </p>
-      </div>      <div className={`grid grid-cols-1 ${isStudent ? 'sm:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4'} gap-6 mb-8`}>
+      </div><div className={`grid grid-cols-1 ${isStudent ? 'sm:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4'} gap-6 mb-8`}>
         <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
           <b className="block mb-3 text-lg">Number of <br /> Projects</b>
           <span className="text-2xl font-bold">{projectCount}</span>

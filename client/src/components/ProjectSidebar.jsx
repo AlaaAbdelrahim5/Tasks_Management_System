@@ -76,7 +76,7 @@ const ProjectSidebar = ({ project, onClose, onDelete, darkMode }) => {
   return (
     <div 
       ref={sidebarRef} 
-      className={`fixed top-16 right-0 w-full sm:w-96 h-[calc(100vh-4rem)] flex flex-col shadow-xl z-50 
+      className={`fixed top-17 right-0 w-full sm:w-96 h-[calc(100vh-4rem)] flex flex-col shadow-xl z-50 
         ${darkMode ? "bg-gray-900 border-l border-gray-700" : "bg-gray-100 border-l border-gray-300"}
         transition-all duration-300 ease-in-out transform
         ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-10 opacity-0"}`}

@@ -252,7 +252,7 @@ const Projects = () => {
   const formBg = darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800";
 
   return (
-    <div className={`py-16 min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
+    <div className={`pt-16 pb-4 min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}>
       <div className="m-4">
         {notification.show && (
           <div
@@ -328,10 +328,11 @@ const Projects = () => {
 
         <h2
           className={`text-2xl pb-4 font-bold ${
-            darkMode ? "text-blue-400" : "text-blue-800"
+            darkMode ? "text-blue-400" : "text-blue-600"
           }`}
         >
-          {isStudent ? "Your Projects" : "All Projects"}
+          {isStudent ? "Your Projects" : "Projects Overview"}
+          <div className="mt-2 w-24 h-1 bg-blue-500 mx-auto rounded-full" />
         </h2>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mb-4">
@@ -340,8 +341,8 @@ const Projects = () => {
               onClick={() => setShowForm(true)}
               className={`px-4 py-2 rounded transition-colors ${
                 darkMode
-                  ? "bg-blue-600 text-white hover:bg-blue-500"
-                  : "bg-blue-800 text-white hover:bg-blue-700"
+                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
             >
               Add New Project
