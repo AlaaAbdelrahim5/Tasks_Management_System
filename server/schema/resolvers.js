@@ -3,11 +3,6 @@ const Project = require("../models/Project");
 const Task = require("../models/Task");
 const Message = require("../models/Message");
 const bcrypt = require("bcryptjs");
-const { PubSub } = require("graphql-subscriptions");
-
-// Create a new PubSub instance
-const pubsub = new PubSub();
-const MESSAGE_RECEIVED = 'MESSAGE_RECEIVED';
 
 module.exports = {
   Query: {
@@ -17,28 +12,14 @@ module.exports = {
     getTasks: async () => await Task.find(),
     getStudentTasks: async (_, { username }) => {
       return await Task.find({ assignedStudent: username });
-    },    getMessages: async (_, { sender, receiver }) => {
-      // Updated to use email addresses for sender and receiver
+    },
+    getMessages: async (_, { sender, receiver }) => {
       return await Message.find({
         $or: [
           { sender, receiver },
           { sender: receiver, receiver: sender },
         ],
       }).sort({ timestamp: 1 });
-    },
-    getLatestMessageCount: async (_, { sender, receiver }) => {
-      // This query counts unread messages from a specific sender (email) to the receiver (email)
-      // In a real app, you might use a "read" flag, but for simplicity
-      // we're just counting all messages from the last 30 minutes
-      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-      
-      const count = await Message.countDocuments({
-        sender,
-        receiver,
-        timestamp: { $gte: thirtyMinutesAgo }
-      });
-      
-      return count;
     },
   },
 
@@ -132,53 +113,11 @@ module.exports = {
       await Project.findOneAndDelete({ id: Number(id) });
 
       return "Project and related tasks deleted.";
-    },    sendMessage: async (_, { sender, receiver, content }) => {
-      // Create and save the message - now using email addresses
+    },
+
+    sendMessage: async (_, { sender, receiver, content }) => {
       const message = new Message({ sender, receiver, content });
-      const savedMessage = await message.save();
-      
-      // Convert MongoDB document to plain object for publishing
-      const messageObject = {
-        id: savedMessage._id.toString(),
-        sender: savedMessage.sender,
-        receiver: savedMessage.receiver,
-        content: savedMessage.content,
-        timestamp: savedMessage.timestamp.toString()
-      };
-      
-      console.log(`Publishing message: ${sender} -> ${receiver}: ${content.substring(0, 20)}...`);
-      
-      // Only publish once with a single payload that contains both email addresses
-      // This allows our subscription resolver to filter appropriately
-      pubsub.publish(MESSAGE_RECEIVED, {
-        messageReceived: messageObject,
-        senderEmail: sender,
-        receiverEmail: receiver
-      });
-      
-      return savedMessage;
-    },},
-    Subscription: {    messageReceived: {
-      subscribe: (_, { receiver }, context) => {
-        console.log(`New subscription for email: ${receiver}`);
-        return pubsub.asyncIterator([MESSAGE_RECEIVED]);
-      },
-      resolve: (payload, variables, context) => {
-        const subscriberEmail = variables.receiver;
-        const msgSender = payload.messageReceived.sender;
-        const msgReceiver = payload.messageReceived.receiver;
-        
-        console.log(`Filtering message - Subscriber: ${subscriberEmail}, Message: ${msgSender} -> ${msgReceiver}`);
-        
-        // A user should receive a message if they are either the sender or receiver (by email)
-        if (subscriberEmail === msgSender || subscriberEmail === msgReceiver) {
-          console.log(`✅ Delivering message to ${subscriberEmail}`);
-          return payload.messageReceived;
-        }
-        
-        console.log(`❌ Message filtered out for ${subscriberEmail}`);
-        return null;
-      }
+      return await message.save();
     },
   },
 };

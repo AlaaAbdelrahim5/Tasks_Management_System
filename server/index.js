@@ -1,74 +1,193 @@
 const express = require("express");
 const { ApolloServer } = require("apollo-server-express");
-const { createServer } = require("http");
-const { execute, subscribe } = require("graphql");
-const { SubscriptionServer } = require("subscriptions-transport-ws");
-const { makeExecutableSchema } = require("@graphql-tools/schema");
 const mongoose = require("mongoose");
+const http = require("http");
+const WebSocket = require("ws"); // Import WebSocket for constants
+const { WebSocketServer } = WebSocket;
 const typeDefs = require("./schema/typeDefs");
 const resolvers = require("./schema/resolvers");
+const Message = require("./models/Message");
 
 const startServer = async () => {
-  // Create Express app
   const app = express();
-  
+
   // Allow CORS
   app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     next();
   });
-  
-  // Create HTTP server
-  const httpServer = createServer(app);
-  
-  // Create schema from typeDefs and resolvers
-  const schema = makeExecutableSchema({ typeDefs, resolvers });
-  
-  // Create Apollo Server
-  const server = new ApolloServer({
-    schema,
-    plugins: [{
-      async serverWillStart() {
-        return {
-          async drainServer() {
-            subscriptionServer.close();
-          },
-        };
-      },
-    }],
-  });
-    // Create subscription server
-  const subscriptionServer = SubscriptionServer.create(
-    {
-      schema,
-      execute,
-      subscribe,
-      onConnect: (connectionParams, webSocket, context) => {
-        console.log('🔌 Client connected to WebSocket');
-        return { connectionParams };
-      },
-      onDisconnect: (webSocket, context) => {
-        console.log('🔌 Client disconnected from WebSocket');
-      },
-      onOperation: (message, params, webSocket) => {
-        console.log(`🔄 WebSocket operation: ${message.type}`, 
-          message.type === 'start' ? message.payload.query.substring(0, 50) + '...' : '');
-        return params;
-      }
-    },
-    {
-      server: httpServer,
-      path: '/graphql',
-    }
-  );
-  
-  // Start Apollo Server
-  await server.start();
-  server.applyMiddleware({ app });
 
-  // Connect to MongoDB
+  const httpServer = http.createServer(app);
+  // Create WebSocket server
+  const wss = new WebSocketServer({ server: httpServer });
+  
+  // Map to store user connections (userId -> Set of WebSocket connections)
+  const userConnections = new Map();
+  
+  // Helper function to register a connection
+  const registerConnection = (userId, ws) => {
+    if (!userConnections.has(userId)) {
+      userConnections.set(userId, new Set());
+    }
+    userConnections.get(userId).add(ws);
+    console.log(`User ${userId} has ${userConnections.get(userId).size} active connections`);
+  };
+  
+  // Helper function to unregister a connection
+  const unregisterConnection = (userId, ws) => {
+    if (userConnections.has(userId)) {
+      userConnections.get(userId).delete(ws);
+      if (userConnections.get(userId).size === 0) {
+        userConnections.delete(userId);
+      }
+      console.log(`User ${userId} disconnected. Connections left: ${userConnections.has(userId) ? userConnections.get(userId).size : 0}`);
+    }
+  };
+
+  // WebSocket connection handler
+  wss.on("connection", (ws) => {
+    console.log("Client connected to WebSocket");
+
+    // Keep track of user identity
+    let userId = null;
+
+    ws.on("message", async (message) => {
+      try {
+        const data = JSON.parse(message);
+        console.log("Received WebSocket message:", data);
+
+        switch (data.type) {
+          case "identify":
+            // Store the user identifier
+            userId = data.userId;
+            ws.userId = userId;
+            // Register this connection for the user
+            registerConnection(userId, ws);
+            console.log(`User identified as: ${userId}`);
+            break;          case "message":
+            // Save message to database
+            if (data.sender && data.receiver && data.content) {
+              try {
+                // First, immediately broadcast to reduce perceived latency
+                const tempMessageId = `temp-${Date.now()}`;
+                const tempTimestamp = Date.now().toString();
+                
+                // Create temporary message object
+                const tempMessageObj = {
+                  type: "message",
+                  message: {
+                    id: tempMessageId,
+                    sender: data.sender,
+                    receiver: data.receiver,
+                    content: data.content,
+                    timestamp: tempTimestamp
+                  }
+                };
+                
+                // Send to all sender's connections
+                if (userConnections.has(data.sender)) {
+                  userConnections.get(data.sender).forEach(conn => {
+                    if (conn.readyState === WebSocket.OPEN) {
+                      conn.send(JSON.stringify(tempMessageObj));
+                    }
+                  });
+                }
+                
+                // Send to all receiver's connections
+                if (userConnections.has(data.receiver)) {
+                  userConnections.get(data.receiver).forEach(conn => {
+                    if (conn.readyState === WebSocket.OPEN) {
+                      conn.send(JSON.stringify(tempMessageObj));
+                    }
+                  });
+                }
+                
+                // Then save to database for persistence
+                const newMessage = new Message({
+                  sender: data.sender,
+                  receiver: data.receiver,
+                  content: data.content
+                });
+                
+                const savedMessage = await newMessage.save();
+                
+                // Create persistent message object
+                const persistentMessageObj = {
+                  type: "message",
+                  message: {
+                    id: savedMessage._id,
+                    sender: savedMessage.sender,
+                    receiver: savedMessage.receiver,
+                    content: savedMessage.content,
+                    timestamp: savedMessage.timestamp
+                  }
+                };
+                
+                // Update all sender's connections with the official ID and timestamp
+                if (userConnections.has(data.sender)) {
+                  userConnections.get(data.sender).forEach(conn => {
+                    if (conn.readyState === WebSocket.OPEN) {
+                      conn.send(JSON.stringify(persistentMessageObj));
+                    }
+                  });
+                }
+                
+                // Update all receiver's connections with the official ID and timestamp
+                if (userConnections.has(data.receiver)) {
+                  userConnections.get(data.receiver).forEach(conn => {
+                    if (conn.readyState === WebSocket.OPEN) {
+                      conn.send(JSON.stringify(persistentMessageObj));
+                    }
+                  });
+                }
+                
+                console.log(`Message sent from ${data.sender} to ${data.receiver}: "${data.content}"`);
+              } catch (error) {
+                console.error("Error handling message:", error);
+              }
+            }
+            break;          case "typing":
+            // Forward typing status to all recipient's connections
+            if (userConnections.has(data.receiver)) {
+              const typingData = JSON.stringify({
+                type: "typing",
+                sender: data.sender,
+                isTyping: data.isTyping
+              });
+              
+              userConnections.get(data.receiver).forEach(conn => {
+                if (conn.readyState === WebSocket.OPEN) {
+                  conn.send(typingData);
+                }
+              });
+            }
+            break;
+        }
+      } catch (error) {
+        console.error("WebSocket message error:", error);
+      }
+    });    ws.on("close", () => {
+      if (userId) {
+        unregisterConnection(userId, ws);
+      }
+      console.log("Client disconnected from WebSocket");
+    });
+    
+    // Handle errors
+    ws.on("error", (error) => {
+      console.error("WebSocket connection error:", error);
+      if (userId) {
+        unregisterConnection(userId, ws);
+      }
+    });
+  });
+
+  const apolloServer = new ApolloServer({ typeDefs, resolvers });
+  await apolloServer.start();
+  apolloServer.applyMiddleware({ app });
+
   mongoose
     .connect("mongodb+srv://abdullah:123@adweb.ms9wqqy.mongodb.net/?retryWrites=true&w=majority&appName=adweb", {
       useNewUrlParser: true,
@@ -77,10 +196,9 @@ const startServer = async () => {
     .then(() => console.log("✅ MongoDB connected"))
     .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-  // Start the HTTP server that accepts both HTTP and WebSocket connections
   httpServer.listen(4000, () => {
-    console.log(`🚀 HTTP Server ready at http://localhost:4000${server.graphqlPath}`);
-    console.log(`🚀 WebSocket Server ready at ws://localhost:4000${server.graphqlPath}`);
+    console.log(`🚀 Server ready at http://localhost:4000${apolloServer.graphqlPath}`);
+    console.log(`🔌 WebSocket server running at ws://localhost:4000`);
   });
 };
 
