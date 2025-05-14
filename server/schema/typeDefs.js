@@ -10,25 +10,26 @@ module.exports = gql`
   }
 
   type Project {
-  id: Int!
-  title: String!
-  description: String!
-  students: [String]
-  category: String!
-  startDate: String!
-  endDate: String!
-  status: String!
-}
+    id: Int!
+    title: String!
+    description: String!
+    students: [String]
+    category: String!
+    startDate: String!
+    endDate: String!
+    status: String!
+  }
 
-type Task {
-  id: Int!
-  project: String!
-  name: String!
-  description: String!
-  assignedStudent: String!
-  status: String!
-  dueDate: String!
-}
+  type Task {
+    id: Int!
+    project: String!
+    name: String!
+    description: String!
+    assignedStudent: String!
+    status: String!
+    dueDate: String!
+  }
+  
   type Message {
     id: ID!
     sender: String!
@@ -45,25 +46,24 @@ type Task {
     universityId: String
   }
 
- input ProjectInput {
-  title: String!
-  description: String!
-  students: [String]
-  category: String!
-  startDate: String!
-  endDate: String!
-  status: String!
-}
+  input ProjectInput {
+    title: String!
+    description: String!
+    students: [String]
+    category: String!
+    startDate: String!
+    endDate: String!
+    status: String!
+  }
 
-input TaskInput {
-  project: String!
-  name: String!
-  description: String!
-  assignedStudent: String!
-  status: String!
-  dueDate: String!
-}
-
+  input TaskInput {
+    project: String!
+    name: String!
+    description: String!
+    assignedStudent: String!
+    status: String!
+    dueDate: String!
+  }
   type Query {
     getProjects: [Project]
     getStudents: [User]
@@ -71,6 +71,7 @@ input TaskInput {
     getTasks: [Task]
     getStudentTasks(username: String!): [Task]
     getMessages(sender: String!, receiver: String!): [Message]
+    getLatestMessageCount(sender: String!, receiver: String!): Int
   }
 
   type Mutation {
@@ -83,5 +84,9 @@ input TaskInput {
     updateTaskStatus(id: ID!, status: String!): Task
     deleteProject(id: ID!): String
     sendMessage(sender: String!, receiver: String!, content: String!): Message
+  }
+
+  type Subscription {
+    messageReceived(receiver: String!): Message
   }
 `;

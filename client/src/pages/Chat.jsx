@@ -1,5 +1,7 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
+import { useQuery, useMutation, useSubscription } from "@apollo/client";
 import { ThemeContext } from "../App";
+import { GET_ALL_USERS, GET_MESSAGES, SEND_MESSAGE, MESSAGE_RECEIVED } from "../graphql/queries";
 
 const Chat = () => {
   const { darkMode } = useContext(ThemeContext);
@@ -12,175 +14,135 @@ const Chat = () => {
   const messagesEndRef = useRef(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const messageContainerRef = useRef(null);
-
-  // Get all users for the sidebar
-  useEffect(() => {
-    fetchUsers();
-    
-    // Set up global polling for new messages every 3 seconds
-    const intervalId = setInterval(checkAllNewMessages, 3000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query {
-              getAllUsers {
-                username
-                isStudent
-              }
-            }
-          `,
-        }),
-      });
-      
-      const data = await res.json();
-      const allUsers = data.data.getAllUsers || [];
-      const filtered = allUsers.filter((u) => u.username !== user.username);
-      setStudents(filtered);
-      
-      // Initialize unread messages count
+  // Query to get all users
+  const { loading: usersLoading } = useQuery(GET_ALL_USERS, {
+    onCompleted: (data) => {
+      const allUsers = data.getAllUsers || [];
+      const filtered = allUsers.filter((u) => u.email !== user.email);
+      setStudents(filtered);      // Initialize unread messages count
       const unreadInit = {};
       filtered.forEach(u => {
-        unreadInit[u.username] = 0;
+        // Create a unique key for each user combining username and email
+        const uniqueKey = `${u.username}_${u.email}`;
+        unreadInit[uniqueKey] = 0;
       });
       setUnreadMessages(unreadInit);
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error("Failed to fetch users", err);
     }
-  };
-
-  // Get messages when selected student changes
-  useEffect(() => {
-    if (!selectedStudent) return;
-    fetchMessages();
-    
-    // Clear unread count when selecting a conversation
-    setUnreadMessages(prev => ({
-      ...prev,
-      [selectedStudent]: 0
-    }));
-  }, [selectedStudent]);
+  });  // Get messages when selected student changes
+  const { loading: messagesLoading, refetch: refetchMessages } = useQuery(GET_MESSAGES, {
+    variables: { 
+      sender: user?.email || "", 
+      receiver: selectedStudent?.email || "" 
+    },
+    skip: !selectedStudent,
+    onCompleted: (data) => {
+      if (data && data.getMessages) {
+        setMessages(data.getMessages);        // Clear unread count when selecting a conversation
+        setUnreadMessages(prev => ({
+          ...prev,
+          [`${selectedStudent.username}_${selectedStudent.email}`]: 0
+        }));
+      }
+    },
+    onError: (error) => {
+      console.error("Error fetching messages:", error);
+    },
+    fetchPolicy: "network-only" // Always fetch from server
+  });
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const fetchMessages = async () => {
-    try {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query GetMessages($sender: String!, $receiver: String!) {
-              getMessages(sender: $sender, receiver: $receiver) {
-                id
-                sender
-                receiver
-                content
-                timestamp
-              }
-            }
-          `,
-          variables: {
-            sender: user.username,
-            receiver: selectedStudent,
-          },
-        }),
-      });
-      const data = await res.json();
-      setMessages(data.data.getMessages || []);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  };
+    scrollToBottom();  }, [messages]);  
   
-  // Check for new messages from ALL users (not just selected)
-  const checkAllNewMessages = async () => {
-    try {
-      // Create a copy of students for potential reordering
-      let updatedStudents = [...students];
-      let hasNewMessages = false;
-      
-      // For each student, check if there are new messages
-      for (const student of students) {
-        const username = student.username;
-        
-        const res = await fetch("http://localhost:4000/graphql", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: `
-              query GetLatestMessageCount($sender: String!, $receiver: String!) {
-                getLatestMessageCount(sender: $sender, receiver: $receiver)
-              }
-            `,
-            variables: {
-              sender: username,
-              receiver: user.username,
-            },
-          }),
-        });
-        
-        const data = await res.json();
-        const newMessageCount = data.data.getLatestMessageCount || 0;
-        
-        console.log(`Checking messages from ${username}: Count ${newMessageCount}`);
-        
-        // If there are new messages and this is not the currently selected chat
-        if (newMessageCount > 0 && username !== selectedStudent) {
-          hasNewMessages = true;
-          
-          // Update unread count
-          setUnreadMessages(prev => ({
-            ...prev,
-            [username]: (prev[username] || 0) + newMessageCount
-          }));
-          
-          // Move this student to the top of the list
-          updatedStudents = [
-            student,
-            ...updatedStudents.filter(s => s.username !== username)
-          ];
-          
-          // Show notification
-          setNewMessageNotification({
-            from: username,
-            count: newMessageCount
-          });
-          
-          // Play sound
-          playNotificationSound();
-        }
-        
-        // If this is the selected chat, update messages
-        if (username === selectedStudent) {
-          fetchMessages();
-        }
+  // Subscribe to new messages  
+  useEffect(() => {
+    console.log("Setting up message subscription for user:", user?.email);
+  }, []); // Log once on component mount
+  const { data: subscriptionData, loading: subLoading, error: subError } = useSubscription(MESSAGE_RECEIVED, {
+    variables: { receiver: user?.email || "" },
+    skip: !user?.email,
+    shouldResubscribe: user?.email ? true : false,
+    onSubscriptionData: ({ subscriptionData }) => {
+      console.log("Subscription data received:", subscriptionData);
+      if (!subscriptionData?.data?.messageReceived) {
+        console.log("No valid message data received");
+        return;
       }
       
-      // Only update student list if order has changed
-      if (hasNewMessages) {
-        console.log("Reordering student list");
-        setStudents(updatedStudents);
+      const newMessage = subscriptionData.data.messageReceived;
+        // Skip if this message was sent from this client - optimistic update already handled it
+      const isOptimisticMessageUpdate = 
+        newMessage.sender === user.email && 
+        newMessage.content === inputMessage &&
+        Date.now() - parseInt(newMessage.timestamp) < 2000; // Within 2 seconds
+        
+      if (isOptimisticMessageUpdate) {
+        console.log("Skipping duplicate message from subscription (already handled locally)");
+        return;
+      }
+      
+      console.log("WebSocket received message:", newMessage);
+        // If we're currently viewing this conversation - using email addresses
+      if ((selectedStudent?.email === newMessage.sender && newMessage.receiver === user.email) || 
+          (selectedStudent?.email === newMessage.receiver && newMessage.sender === user.email)) {
+        console.log("Adding message to current conversation");
+        setMessages(prevMessages => {
+          // Check if message is already in the list (prevent duplicates)
+          const messageExists = prevMessages.some(msg => 
+            msg.id === newMessage.id || 
+            (msg.content === newMessage.content && 
+             msg.sender === newMessage.sender &&
+             Math.abs(parseInt(msg.timestamp) - parseInt(newMessage.timestamp)) < 5000) // Within 5 seconds
+          );
+          
+          if (messageExists) {
+            console.log("Message already exists in chat, not adding duplicate");
+            return prevMessages;
+          }
+          
+          return [...prevMessages, newMessage];
+        });
+        // Immediately scroll to show new message
+        setTimeout(scrollToBottom, 100);      } else if (newMessage.sender !== user.email) {
+        // Message is from someone else but not in current conversation
+        console.log("Message from other user:", newMessage.sender);
+          // Find the user with this email to update unread count by username and email
+        const senderUser = students.find(s => s.email === newMessage.sender);
+        if (senderUser) {          const uniqueUserKey = `${senderUser.username}_${senderUser.email}`;
+          setUnreadMessages(prev => ({
+            ...prev,
+            [uniqueUserKey]: (prev[uniqueUserKey] || 0) + 1
+          }));
+        }        // Show notification for new message using the username from previously found senderUser
+        setNewMessageNotification({
+          from: senderUser ? senderUser.username : newMessage.sender,
+          count: 1
+        });
+        
+        // Play sound
+        playNotificationSound();
+          // Move this sender to the top of the list - using email address
+        // senderUser is already found earlier in this function
+        if (senderUser) {
+          setStudents(prevStudents => [
+            senderUser,
+            ...prevStudents.filter(s => s.email !== newMessage.sender)
+          ]);
+        }
         
         // Auto-dismiss notification after 5 seconds
         setTimeout(() => {
           setNewMessageNotification(null);
         }, 5000);
       }
-    } catch (error) {
-      console.error("Error checking for new messages:", error);
+    },
+    onError: (error) => {
+      console.error("WebSocket subscription error:", error);
     }
-  };
+  });
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -191,55 +153,95 @@ const Chat = () => {
   const playNotificationSound = () => {
     const audio = new Audio('/notification.mp3');
     audio.play().catch(e => console.log("Audio play failed:", e));
-  };
-
+  };  // Mutation to send a message
+  const [sendMessageMutation, { loading: sendingMessage }] = useMutation(SEND_MESSAGE, {
+    onCompleted: (data) => {
+      if (data && data.sendMessage) {
+        console.log("Message sent successfully:", data.sendMessage);
+        
+        // Add the new message to the local state 
+        // (may be redundant with subscription, but ensures UI updates)
+        setMessages(prev => {
+          // Check if the message is already in the list (from subscription)
+          const messageExists = prev.some(msg => msg.id === data.sendMessage.id);
+          if (messageExists) return prev;
+          return [...prev, data.sendMessage];
+        });
+        
+        setInputMessage("");
+        scrollToBottom();        // Always move this conversation to the top of the list when sending a message
+        if (selectedStudent) {
+          console.log(`Moving ${selectedStudent.username} to top after sending message`);
+          setStudents([
+            selectedStudent,
+            ...students.filter(s => s.email !== selectedStudent.email)
+          ]);
+        }
+      }
+    },
+    onError: (error) => {
+      console.error("Failed to send message:", error);
+      alert("Failed to send message. Please try again.");
+    }
+  });
+    // Track last sent message to prevent duplicates
+  const lastSentMessageRef = useRef(null);
+  
   const handleSend = () => {
     if (!inputMessage.trim() || !selectedStudent) return;
     
-    fetch("http://localhost:4000/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `
-          mutation SendMessage($sender: String!, $receiver: String!, $content: String!) {
-            sendMessage(sender: $sender, receiver: $receiver, content: $content) {
-              id
-              sender
-              receiver
-              content
-              timestamp
-            }
-          }
-        `,
-        variables: {
-          sender: user.username,
-          receiver: selectedStudent,
-          content: inputMessage,
-        },
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        // Check if the response contains message data
-        if (data.data && data.data.sendMessage) {
-          setMessages((prev) => [...prev, data.data.sendMessage]);
-          setInputMessage("");
-          scrollToBottom();
-          
-          // Always move this conversation to the top of the list when sending a message
-          const currentStudent = students.find(s => s.username === selectedStudent);
-          if (currentStudent) {
-            console.log(`Moving ${selectedStudent} to top after sending message`);
-            setStudents([
-              currentStudent,
-              ...students.filter(s => s.username !== selectedStudent)
-            ]);
-          }
-        } else {
-          console.error("Invalid response from server:", data);
+    // Don't allow sending the same message twice in quick succession
+    const currentTime = Date.now();
+    const messageContent = inputMessage.trim();
+    
+    if (lastSentMessageRef.current && 
+        lastSentMessageRef.current.content === messageContent &&
+        currentTime - lastSentMessageRef.current.time < 2000) {
+      console.log("Preventing duplicate message send");
+      return;
+    }
+    
+    // Remember this message to prevent duplicates
+    lastSentMessageRef.current = {
+      content: messageContent,
+      time: currentTime
+    };
+    
+    // Create an optimistic response (show message immediately)
+    const optimisticId = `temp-${currentTime}`;    const optimisticMessage = {
+      id: optimisticId,
+      sender: user.email,
+      receiver: selectedStudent.email,
+      content: messageContent,
+      timestamp: currentTime.toString()
+    };
+    
+    // Add optimistic message to UI
+    setMessages(prev => [...prev, optimisticMessage]);
+    
+    // Clear input field
+    setInputMessage("");
+      // Send mutation
+    sendMessageMutation({
+      variables: {
+        sender: user.email,
+        receiver: selectedStudent.email,
+        content: messageContent
+      },
+      optimisticResponse: {
+        sendMessage: optimisticMessage
+      },
+      update: (cache, { data }) => {
+        if (data && data.sendMessage) {
+          // Replace the temporary message with the real one
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === optimisticId ? data.sendMessage : msg
+            )
+          );
         }
-      })
-      .catch(err => console.error("Failed to send message:", err));
+      }
+    });
   };
 
   const handleKeyDown = (e) => {
@@ -292,9 +294,8 @@ const Chat = () => {
             {students.map((user, i) => (
               <div
                 key={i}
-                onClick={() => setSelectedStudent(user.username)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition ${
-                  selectedStudent === user.username ? 
+                onClick={() => setSelectedStudent(user)}                className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition ${
+                  selectedStudent && selectedStudent.email === user.email ? 
                     (darkMode ? "bg-blue-900/40 border-l-4 border-blue-500" : "bg-blue-50 border-l-4 border-blue-500") : 
                     (darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-gray-50 text-gray-800 hover:bg-gray-100 border border-gray-100")
                 }`}
@@ -304,11 +305,10 @@ const Chat = () => {
                     darkMode ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-800"
                   } relative`}
                 >
-                  {user.username.charAt(0)}
-                  {/* Unread message indicator */}
-                  {unreadMessages[user.username] > 0 && (
+                  {user.username.charAt(0)}                  {/* Unread message indicator */}
+                  {unreadMessages[`${user.username}_${user.email}`] > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadMessages[user.username] > 9 ? '9+' : unreadMessages[user.username]}
+                      {unreadMessages[`${user.username}_${user.email}`] > 9 ? '9+' : unreadMessages[`${user.username}_${user.email}`]}
                     </span>
                   )}
                 </div>
@@ -339,13 +339,12 @@ const Chat = () => {
           >
             {selectedStudent ? (
               <>
-                <div className="flex items-center">
-                  <div className={`w-8 h-8 mr-2 rounded-full flex items-center justify-center ${
+                <div className="flex items-center">                  <div className={`w-8 h-8 mr-2 rounded-full flex items-center justify-center ${
                     darkMode ? "bg-blue-600" : "bg-blue-500"
                   } text-white`}>
-                    {selectedStudent.charAt(0).toUpperCase()}
+                    {selectedStudent.username.charAt(0).toUpperCase()}
                   </div>
-                  <span>Chatting with {selectedStudent}</span>
+                  <span>Chatting with {selectedStudent.username}</span>
                 </div>
                 <div className="text-sm font-normal opacity-70">
                   {messages.length} messages
@@ -368,9 +367,8 @@ const Chat = () => {
             <div className="space-y-3">
               {messages.map((msg) => (
                 <div
-                  key={msg.id}
-                  className={`p-3 rounded-lg max-w-xs ${
-                    msg.sender === user.username
+                  key={msg.id}                  className={`p-3 rounded-lg max-w-xs ${
+                    msg.sender === user.email
                       ? "ml-auto " +
                         (darkMode
                           ? "bg-blue-600 text-white"
