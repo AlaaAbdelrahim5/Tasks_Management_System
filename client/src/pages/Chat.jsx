@@ -429,10 +429,8 @@ const Chat = () => {
                   {user.username.charAt(0)}
                   {/* Unread message indicator - using composite key */}
                   {unreadMessages[`${user.username}-${user.email}`] > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadMessages[`${user.username}-${user.email}`] > 9
-                        ? "9+"
-                        : unreadMessages[`${user.username}-${user.email}`]}
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+            
                     </span>
                   )}
                 </div>
