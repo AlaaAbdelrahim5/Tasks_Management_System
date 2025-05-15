@@ -14,11 +14,22 @@ const Chat = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const messagesEndRef = useRef(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const messageContainerRef = useRef(null);
   const wsRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+
+  // new: Track current chat via ref to avoid stale closures
+  const selectedChatEmailRef = useRef(null); // new
+
+  // new: Sync ref when chat selection changes
+  useEffect(() => {
+    selectedChatEmailRef.current = selectedStudent?.email || null; // new
+  }, [selectedStudent]); // new
 
   // Handle window resize
   useEffect(() => {
@@ -28,24 +39,69 @@ const Chat = () => {
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  // Get all users for the sidebar and set up WebSocket connection
+  }, []); // Get all users for the sidebar and set up WebSocket connection
   useEffect(() => {
     fetchUsers();
     setupWebSocket();
 
+    // Create heartbeat mechanism to keep connection alive
+    const heartbeatInterval = setInterval(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          // Less verbose logging to prevent console spam
+          if (Math.random() < 0.1) {
+            // Only log 10% of pings for debugging
+            console.log("Sending ping to keep connection alive");
+          }
+
+          wsRef.current.send(JSON.stringify({ type: "ping" }));
+        } catch (err) {
+          console.error("Error sending heartbeat ping:", err);
+          // Connection might be dead but not detected yet
+          // Don't force close here, let the connection naturally fail
+          // This prevents aggressive reconnection cycles
+        }
+      }
+    }, 30000); // Send heartbeat every 30 seconds instead of 15 (less aggressive)
+
     return () => {
-      // Clean up WebSocket connection
-      if (wsRef.current) {
-        wsRef.current.close();
+      // Clean up WebSocket connection - use normal closure code
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+        console.log("Component unmounting - cleaning up WebSocket connection");
+        wsRef.current.close(1000, "Component unmounting");
       }
 
       // Clear typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
       }
+
+      // Clear reconnection timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Clear the heartbeat interval
+      clearInterval(heartbeatInterval);
+
+      console.log("All intervals and timeouts cleared");
     };
   }, []);
+
+  // new: Re-bind WS listener on chat change (ensures fresh selectedStudent)
+  useEffect(() => { // new
+    if (!wsRef.current) return; // new
+    const ws = wsRef.current; // new
+    const listener = (evt) => { // new
+      const data = JSON.parse(evt.data); // new
+      if (data.type === "message") handleIncomingMessage(data.message); // new
+    }; // new
+    ws.addEventListener("message", listener); // new
+    return () => ws.removeEventListener("message", listener); // new
+  }, [selectedStudent, students]); // new
+
   // Set up WebSocket connection  // Function to fetch latest message timestamp for a user
   const fetchLatestMessageTimestamp = async (otherUser) => {
     try {
@@ -79,14 +135,14 @@ const Chat = () => {
           messagesData.sort((a, b) => {
             const dateA = new Date(b.timestamp);
             const dateB = new Date(a.timestamp);
-            
+
             if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
               return 0; // Invalid dates should not change the order
             }
-            
+
             return dateA - dateB;
           });
-          
+
           const latestTimestamp = messagesData[0].timestamp;
 
           // Make sure it's a valid date before updating state
@@ -108,58 +164,224 @@ const Chat = () => {
   };
 
   const setupWebSocket = () => {
-    wsRef.current = new WebSocket("ws://localhost:4000");
+    // Don't attempt to reconnect if already connecting
+    if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
+      console.log("Already trying to connect, skipping reconnection attempt");
+      return;
+    }
 
-    wsRef.current.onopen = () => {
-      wsRef.current.send(
-        JSON.stringify({
-          type: "identify",
-          userEmail: user.email,
-        })
+    // Close any existing connection before creating a new one
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+      console.log("Closing existing WebSocket connection before reconnecting");
+      wsRef.current.close();
+    }
+
+    // Update reconnection state
+    setIsReconnecting(true);
+
+    // Attempt to create a new connection
+    try {
+      wsRef.current = new WebSocket("ws://localhost:4000");
+      console.log(
+        `Setting up new WebSocket connection... (Attempt ${
+          reconnectAttempts + 1
+        })`
       );
-      setWsReady(true);
-    };
 
-    wsRef.current.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log("WebSocket message received:", data);
-
-        switch (data.type) {
-          case "message":
-            handleIncomingMessage(data.message);
-            break;
-
-          case "typing":
-            if (
-              selectedStudent &&
-              data.senderEmail === selectedStudent.email &&
-              data.receiverEmail === user.email
-            ) {
-              setIsTyping(data.isTyping);
-              // look up their username for display
-              const u = students.find((s) => s.email === data.senderEmail);
-              setTypingUser(u?.username || data.senderEmail);
-              // …clear timeout as before…
-            }
-            break;
+      // Set a timeout to detect if connection is taking too long
+      const connectionTimeout = setTimeout(() => {
+        if (
+          wsRef.current &&
+          wsRef.current.readyState === WebSocket.CONNECTING
+        ) {
+          console.log("Connection attempt timed out");
+          // Don't close here, let the onclose handler deal with reconnection
         }
-      } catch (error) {
-        console.error("Error processing WebSocket message:", error);
+      }, 5000);
+
+      wsRef.current.onopen = () => {
+        clearTimeout(connectionTimeout);
+        console.log("WebSocket connection established successfully");
+
+        // Reset connection state
+        setWsReady(true);
+        setIsReconnecting(false);
+        setReconnectAttempts(0);
+
+        // Send identification message
+        wsRef.current.send(
+          JSON.stringify({
+            type: "identify",
+            userEmail: user.email,
+          })
+        );
+
+        // When connection is re-established, refresh messages if in a conversation
+        if (selectedStudent) {
+          console.log(
+            "WebSocket reconnected - refreshing current conversation"
+          );
+          fetchMessages();
+        }
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Don't log ping/pong messages to reduce console noise
+          if (data.type !== "ping" && data.type !== "pong") {
+            console.log("WebSocket message received:", data);
+          }
+
+          switch (data.type) {
+            case "message":
+              handleIncomingMessage(data.message);
+              break;
+
+            case "typing":
+              if (
+                selectedStudent &&
+                data.senderEmail === selectedStudent.email &&
+                data.receiverEmail === user.email
+              ) {
+                setIsTyping(data.isTyping);
+                // look up their username for display
+                const u = students.find((s) => s.email === data.senderEmail);
+                setTypingUser(u?.username || data.senderEmail);
+
+                // Clear any existing timeout
+                if (typingTimeoutRef.current) {
+                  clearTimeout(typingTimeoutRef.current);
+                }
+
+                // Set a fallback timeout to clear typing indicator
+                if (data.isTyping) {
+                  typingTimeoutRef.current = setTimeout(() => {
+                    setIsTyping(false);
+                  }, 5000);
+                }
+              }
+              break;
+
+            case "error":
+              console.error("WebSocket error from server:", data.message);
+              break;
+
+            case "pong":
+              // Server responded to our ping, connection is alive
+              // Don't log every ping/pong to reduce console noise
+              break;
+
+            default:
+              console.log("Unknown message type:", data.type);
+          }
+        } catch (error) {
+          console.error("Error processing WebSocket message:", error);
+        }
+      };
+
+      wsRef.current.onclose = (event) => {
+        clearTimeout(connectionTimeout);
+        console.log("WebSocket connection closed with code:", event.code);
+        setWsReady(false);
+
+        // Don't attempt to reconnect if the component is unmounting (code 1000 = normal closure)
+        if (event.code === 1000 && event.reason === "Component unmounting") {
+          console.log(
+            "Normal closure due to component unmounting, not reconnecting"
+          );
+          setIsReconnecting(false);
+          return;
+        }
+
+        // Handle reconnection
+        handleReconnection();
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error("WebSocket error occurred:", error);
+        // Error handling done in onclose
+      };
+    } catch (error) {
+      console.error("Failed to create WebSocket connection:", error);
+      handleReconnection();
+    }
+  };
+
+  // Separate function to handle reconnection logic
+  const handleReconnection = () => {
+    // Clear any existing reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // Only attempt reconnect if we're not already reconnecting
+    if (isReconnecting) {
+      console.log("Already in reconnecting state, not starting a new attempt");
+      return;
+    }
+
+    // Calculate reconnect delay with exponential backoff (5s, 10s, 20s up to 60s max)
+    const attempts = reconnectAttempts;
+    const maxDelay = 60000; // 60 seconds maximum delay
+    const baseDelay = 5000; // 5 seconds base delay (increased from 3)
+    let reconnectDelay = Math.min(baseDelay * Math.pow(2, attempts), maxDelay);
+
+    // Add some randomness to prevent all clients reconnecting simultaneously
+    reconnectDelay += Math.random() * 2000; // More randomness (up to 2 seconds)
+
+    console.log(
+      `Attempting to reconnect in ${(reconnectDelay / 1000).toFixed(
+        1
+      )}s... (Attempt ${attempts + 1})`
+    );
+
+    // Increment the reconnection attempt counter
+    setReconnectAttempts((prev) => prev + 1);
+    setIsReconnecting(true);
+
+    // Try to reconnect after the calculated delay
+    reconnectTimeoutRef.current = setTimeout(() => {
+      if (document.visibilityState !== "hidden") {
+        // Check if we're already connected before attempting to reconnect
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          console.log("Already connected, cancelling reconnection attempt");
+          setIsReconnecting(false);
+          return;
+        }
+
+        // Attempt to reconnect
+        setupWebSocket();
+      } else {
+        console.log(
+          "Page not visible, delaying reconnection until user returns"
+        );
+        // We'll reconnect when the user returns to the page
+        const handleVisibilityChange = () => {
+          if (document.visibilityState === "visible") {
+            console.log("User returned to page, attempting reconnection");
+            document.removeEventListener(
+              "visibilitychange",
+              handleVisibilityChange
+            );
+
+            // Double-check connection state again after visibility change
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+              console.log(
+                "Already connected after tab focus, cancelling reconnection"
+              );
+              setIsReconnecting(false);
+              return;
+            }
+
+            setupWebSocket();
+          }
+        };
+        document.addEventListener("visibilitychange", handleVisibilityChange);
       }
-    };
-
-    wsRef.current.onclose = () => {
-      console.log("WebSocket connection closed");
-      setWsReady(false);
-
-      // Try to reconnect after 5 seconds
-      setTimeout(setupWebSocket, 5000);
-    };
-
-    wsRef.current.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+    }, reconnectDelay);
   };
 
   const fetchUsers = async () => {
@@ -203,14 +425,22 @@ const Chat = () => {
     } catch (err) {
       console.error("Failed to fetch users", err);
     }
-  };
-
-  // Get messages when selected student changes
+  }; // Get messages when selected student changes and set up message refresh
   useEffect(() => {
     if (!selectedStudent) return;
+
+    console.log("Selected student changed to:", selectedStudent.username);
+
+    // Initial fetch
     fetchMessages();
 
     // Clear unread count when selecting a conversation
+    setUnreadMessages((prev) => ({
+      ...prev,
+      [selectedStudent.email]: 0,
+    }));
+
+    // clear unread count
     setUnreadMessages((prev) => ({
       ...prev,
       [selectedStudent.email]: 0,
@@ -221,14 +451,29 @@ const Chat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
+  
   const fetchMessages = async () => {
+    if (!selectedStudent) return;
+
+    console.log(
+      "Fetching messages for conversation with:",
+      selectedStudent.email
+    );
+
     try {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
+      // Add a random query parameter to prevent browser caching
+      const timestamp = new Date().getTime();
+      const res = await fetch(
+        `http://localhost:4000/graphql?nocache=${timestamp}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+          body: JSON.stringify({
+            query: `
             query GetMessages($senderEmail: String!, $receiverEmail: String!) {
               getMessages(senderEmail: $senderEmail, receiverEmail: $receiverEmail) {
                 id
@@ -238,30 +483,100 @@ const Chat = () => {
                 timestamp
               }
             }`,
-          variables: {
-            senderEmail: user.email,
-            receiverEmail: selectedStudent.email,
-          },
-        }),
-      });
+            variables: {
+              senderEmail: user.email,
+              receiverEmail: selectedStudent.email,
+            },
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`Network error: ${res.status} ${res.statusText}`);
+      }
+
       const data = await res.json();
-      const messagesData = data.data.getMessages || [];
-      setMessages(messagesData);
 
-      // If there are messages, update the latest timestamp for this user
+      if (data.errors) {
+        throw new Error(`GraphQL errors: ${JSON.stringify(data.errors)}`);
+      }
+
+      const messagesData = data.data?.getMessages || [];
+
+      // Don't log every fetch
       if (messagesData.length > 0) {
-        const userKey = selectedStudent.email;
-        // Find the latest message by timestamp
-        const latestMessage = messagesData.reduce((latest, message) => {
-          return new Date(message.timestamp) > new Date(latest.timestamp)
-            ? message
-            : latest;
-        }, messagesData[0]);
+        console.log("Retrieved", messagesData.length, "messages");
+      }
 
-        setLatestMessageTimestamps((prev) => ({
-          ...prev,
-          [userKey]: latestMessage.timestamp,
-        }));
+      // Make sure we're still in the same conversation before updating messages
+      if (selectedStudent) {
+        // Preserve any temporary messages that haven't been confirmed yet
+        setMessages((prevMessages) => {
+          // Extract any temp messages in the current conversation
+          const tempMessages = prevMessages.filter(
+            (m) =>
+              m.id.startsWith("temp-") &&
+              m.senderEmail === user.email &&
+              m.receiverEmail === selectedStudent.email
+          );
+
+          // If we have temp messages, we need to be careful not to create duplicates
+          if (tempMessages.length > 0) {
+            // For each temp message, check if there's a real message with matching content
+            const mergedMessages = [...messagesData];
+
+            tempMessages.forEach((tempMsg) => {
+              // Check if this temp message has a corresponding real message
+              const hasRealVersion = messagesData.some(
+                (realMsg) =>
+                  realMsg.content === tempMsg.content &&
+                  realMsg.senderEmail === tempMsg.senderEmail &&
+                  realMsg.receiverEmail === tempMsg.receiverEmail &&
+                  Math.abs(
+                    new Date(realMsg.timestamp).getTime() -
+                      new Date(tempMsg.timestamp).getTime()
+                  ) < 10000
+              );
+
+              // If no real version exists yet, keep the temp message
+              if (!hasRealVersion) {
+                mergedMessages.push(tempMsg);
+              }
+            });
+
+            return mergedMessages;
+          }
+
+          // If no temp messages, just use the fetched messages
+          return messagesData;
+        });
+
+        // If there are messages, update the latest timestamp for this user
+        if (messagesData.length > 0) {
+          const userKey = selectedStudent.email;
+
+          // Find the latest message by timestamp
+          const latestMessage = messagesData.reduce((latest, message) => {
+            const dateLatest = new Date(latest.timestamp);
+            const dateCurrent = new Date(message.timestamp);
+
+            // Handle invalid dates
+            if (isNaN(dateLatest.getTime())) return message;
+            if (isNaN(dateCurrent.getTime())) return latest;
+
+            return dateCurrent > dateLatest ? message : latest;
+          }, messagesData[0]);
+
+          if (latestMessage) {
+            setLatestMessageTimestamps((prev) => ({
+              ...prev,
+              [userKey]: latestMessage.timestamp,
+            }));
+          }
+
+          // Always scroll to bottom when messages are updated
+          setTimeout(scrollToBottom, 100);
+        }
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -277,88 +592,101 @@ const Chat = () => {
   const playNotificationSound = () => {
     const audio = new Audio("/notification.mp3");
     audio.play().catch((e) => console.log("Audio play failed:", e));
-  };
+  }; // Handle incoming WebSocket messages
 
-  // Handle incoming WebSocket messages
-  const handleIncomingMessage = (message) => {
-    setMessages((prev) => {
-      const isReal = !message.id.startsWith("temp-");
-      const timeWindow = 3000;
-      const msgTime = new Date(message.timestamp).getTime();
+    // Incoming message handler using selectedChatEmailRef (new)
+const handleIncomingMessage = (message) => { // new
+    const otherEmail =
+      message.senderEmail === user.email ? message.receiverEmail : message.senderEmail; // new
 
-      const filtered = prev.filter((m) => {
-        // match only on content + senderEmail/receiverEmail + timestamp
-        if (m.id.startsWith("temp-") && !message.id.startsWith("temp-")) {
-          return !(
-            m.content === message.content &&
-            m.senderEmail === message.senderEmail &&
-            m.receiverEmail === message.receiverEmail &&
-            Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 3000
-          );
-        }
-        return m.id !== message.id;
-      });
+    // Update sidebar timestamp
+    setLatestMessageTimestamps(prev => ({ ...prev, [otherEmail]: message.timestamp }));
 
-      return [...filtered, message];
-    });
-
-    // Update the timestamp for latest message from this user
-    const userKey =
-      message.senderEmail === user.email
-        ? message.receiverEmail
-        : message.senderEmail;
-
-    setLatestMessageTimestamps((prev) => ({
-      ...prev,
-      [userKey]: message.timestamp,
-    }));
-
-    scrollToBottom();
-
-    // Notify only if it's from someone else
-    if (message.senderEmail !== user.email) {
-      if (!selectedStudent || message.senderEmail !== selectedStudent.email) {
-        const userKey = message.senderEmail;
-        setUnreadMessages((prev) => ({
-          ...prev,
-          [userKey]: (prev[userKey] || 0) + 1,
-        }));
-        playNotificationSound();
-        const sender = students.find((s) => s.email === message.senderEmail);
-        setNewMessageNotification({
-          from: sender?.username || message.senderEmail,
-          count: 1,
-        });
-        setTimeout(() => {
-          setNewMessageNotification(null);
-        }, 5000);
-      }
+    // Bump unread if not current chat
+    if (message.senderEmail !== user.email && selectedChatEmailRef.current !== otherEmail) { // new
+      setUnreadMessages(u => ({ ...u, [otherEmail]: (u[otherEmail] || 0) + 1 })); // new
+      playNotificationSound(); // new
     }
-  };
+
+    // If message is for current chat, append immediately with dedupe of temp
+    if (selectedChatEmailRef.current === otherEmail) { // new
+      setMessages(prev => {
+        // remove any temp message matching content
+        const cleaned = prev.filter(m => !(m.id.startsWith("temp-") && m.content === message.content)); // new: dedupe temp
+        // remove any existing same-id message
+        const withoutDup = cleaned.filter(m => m.id !== message.id); // new
+        return [...withoutDup, message]; // new
+      }); // new
+      scrollToBottom(); // new
+    }
+  }; // new
 
   const handleSend = () => {
-    if (!inputMessage.trim() || !selectedStudent || !wsReady) return;
+    if (!inputMessage.trim() || !selectedStudent) return;
 
-    const messageContent = inputMessage.trim();
+    const content = inputMessage.trim();
+    const now = new Date().toISOString();
+    const tempId = `temp-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 5)}`;
 
-    // Only send via WebSocket (do not add to UI yourself)
-    wsRef.current.send(
-      JSON.stringify({
+    // 1) show the UI immediately
+    const tempMessage = {
+      id: tempId,
+      senderEmail: user.email,
+      receiverEmail: selectedStudent.email,
+      content,
+      timestamp: now,
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+    setInputMessage("");
+    scrollToBottom();
+
+    // 2) try WS first
+    let wsSent = false;
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      const wsPayload = {
         type: "message",
         senderEmail: user.email,
         receiverEmail: selectedStudent.email,
-        content: messageContent,
+        content,
+        tempId, // we include this in case you want to match it on the server
+      };
+      wsRef.current.send(JSON.stringify(wsPayload));
+      wsSent = true;
+    }
+
+    // 3) ONLY fall back to HTTP if WS wasn’t open
+    if (!wsSent) {
+      fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+          mutation SendMessage($senderEmail: String!, $receiverEmail: String!, $content: String!) {
+            sendMessage(senderEmail: $senderEmail, receiverEmail: $receiverEmail, content: $content) {
+              id senderEmail receiverEmail content timestamp
+            }
+          }`,
+          variables: {
+            senderEmail: user.email,
+            receiverEmail: selectedStudent.email,
+            content,
+          },
+        }),
       })
-    );
-
-    const now = new Date().toISOString();
-    setLatestMessageTimestamps((prev) => ({
-      ...prev,
-      [selectedStudent.email]: now,
-    }));
-
-    setInputMessage("");
-    scrollToBottom();
+        .then((r) => r.json())
+        .then(({ data }) => {
+          if (data?.sendMessage) {
+            // replace our temp message with the real one
+            setMessages((prev) =>
+              prev.map((m) => (m.id === tempId ? data.sendMessage : m))
+            );
+            scrollToBottom();
+          }
+        })
+        .catch(console.error);
+    }
   };
 
   // Send typing status
@@ -398,6 +726,62 @@ const Chat = () => {
     }
   };
 
+  // Handle the notification click to switch to conversation
+  const handleNotificationClick = (email) => {
+    // Find the student in our list
+    const sender = students.find((s) => s.email === email);
+
+    if (sender) {
+      console.log(
+        `Switching to conversation with ${sender.username} via notification click`
+      );
+      setSelectedStudent({
+        username: sender.username,
+        email: sender.email,
+      });
+
+      // Clear the notification
+      setNewMessageNotification(null);
+
+      // Reset unread count for this conversation
+      setUnreadMessages((prev) => ({
+        ...prev,
+        [sender.email]: 0,
+      }));
+
+      // This will trigger fetchMessages via the useEffect
+    }
+  };
+
+  // Show a notification with proper message preview
+  const showNotification = (sender, message, unreadCount = 1) => {
+    // Format the message content for preview
+    const messagePreview =
+      message.content?.length > 30
+        ? `${message.content.substring(0, 30)}...`
+        : message.content;
+
+    // Create notification object
+    const notification = {
+      from: sender?.username || message.senderEmail,
+      email: message.senderEmail,
+      content: messagePreview,
+      count: unreadCount,
+      time: new Date().toLocaleTimeString(),
+    };
+
+    // Set the notification in state
+    setNewMessageNotification(notification);
+
+    // Auto-dismiss after a delay (giving user time to notice and click)
+    setTimeout(() => {
+      setNewMessageNotification((prev) =>
+        // Only clear if it's the same notification (prevent clearing newer ones)
+        prev?.email === notification.email ? null : prev
+      );
+    }, 7000);
+  };
+
   return (
     <div
       className={`flex flex-col h-screen pt-16 ${
@@ -406,11 +790,14 @@ const Chat = () => {
     >
       {/* Chat container with fixed height */}
       <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-6 overflow-hidden">
-        {/* New message notification */}
+        {/* New message notification */}{" "}
         {newMessageNotification && (
           <div
-            className={`fixed top-24 right-4 p-4 rounded-lg shadow-lg z-50 animate-bounce 
+            className={`fixed top-24 right-4 p-4 rounded-lg shadow-lg z-50 animate-bounce cursor-pointer
             ${darkMode ? "bg-blue-900 text-white" : "bg-blue-500 text-white"}`}
+            onClick={() =>
+              handleNotificationClick(newMessageNotification.email)
+            }
           >
             <div className="flex items-center">
               <div className="mr-2">
@@ -427,18 +814,25 @@ const Chat = () => {
               <div>
                 <p className="font-medium">
                   New message{newMessageNotification.count > 1 ? "s" : ""}
-                </p>
+                </p>{" "}
                 <p className="text-sm opacity-90">
                   From {newMessageNotification.from}
                   {newMessageNotification.count > 1
                     ? ` (${newMessageNotification.count})`
                     : ""}
                 </p>
+                {newMessageNotification.content && (
+                  <p className="text-xs mt-1 opacity-90 font-light italic">
+                    "{newMessageNotification.content}"
+                  </p>
+                )}
+                <p className="text-xs mt-1 opacity-80 font-medium">
+                  Click to view
+                </p>
               </div>
             </div>
           </div>
         )}
-
         {/* Users sidebar - fixed height with scrolling */}
         <div
           className={`w-full md:w-72 p-4 rounded-lg shadow-lg flex flex-col h-full ${
@@ -515,7 +909,8 @@ const Chat = () => {
                     </span>
                     <span className="text-xs opacity-70 block">
                       {user.isStudent ? "Student" : "Admin"}
-                    </span>{" "}                    <span className="text-xs opacity-70 block mt-1">
+                    </span>{" "}
+                    <span className="text-xs opacity-70 block mt-1">
                       {(() => {
                         const rawDate = latestMessageTimestamps[user.email];
 
@@ -523,8 +918,9 @@ const Chat = () => {
 
                         try {
                           const date = new Date(rawDate);
-                          if (isNaN(date.getTime())) throw new Error("Invalid date");
-                          
+                          if (isNaN(date.getTime()))
+                            throw new Error("Invalid date");
+
                           return (
                             <span title={date.toISOString()}>
                               {date.toLocaleDateString(undefined, {
@@ -580,7 +976,6 @@ const Chat = () => {
               ))}
           </div>
         </div>
-
         {/* Chat main area - fixed height with flexible message area */}
         <div
           className={`flex-1 flex flex-col rounded-lg shadow-xl overflow-hidden border-2 ${
@@ -756,14 +1151,16 @@ const Chat = () => {
                       }`}
                     ></div>
                     <div className="flex flex-col">
-                      <div className="break-words">{msg.content}</div>{" "}                      <span className="text-xs opacity-70 mt-1 text-right">
+                      <div className="break-words">{msg.content}</div>{" "}
+                      <span className="text-xs opacity-70 mt-1 text-right">
                         {(() => {
                           if (!msg.timestamp) return "";
-                          
+
                           try {
                             const date = new Date(msg.timestamp);
-                            if (isNaN(date.getTime())) throw new Error("Invalid date");
-                            
+                            if (isNaN(date.getTime()))
+                              throw new Error("Invalid date");
+
                             return (
                               date.toLocaleDateString([], {
                                 month: "short",
@@ -776,7 +1173,11 @@ const Chat = () => {
                               })
                             );
                           } catch (err) {
-                            console.error("Message date parsing error:", err, msg.timestamp);
+                            console.error(
+                              "Message date parsing error:",
+                              err,
+                              msg.timestamp
+                            );
                             return "Just now";
                           }
                         })()}
@@ -816,14 +1217,34 @@ const Chat = () => {
           {/* WebSocket connection status */}
           {!wsReady && selectedStudent && (
             <div
-              className={`px-4 py-1 text-xs ${
-                darkMode ? "text-amber-300" : "text-amber-600"
-              }`}
+              className={`px-4 py-2 text-xs flex items-center justify-between ${
+                darkMode
+                  ? "bg-gray-800 text-amber-300"
+                  : "bg-gray-100 text-amber-600"
+              } border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
             >
               <div className="flex items-center">
-                <span className="mr-2">Reconnecting to chat server...</span>
-                <span className="animate-spin h-3 w-3">⟳</span>
+                <span className="mr-2">
+                  {isReconnecting
+                    ? `Reconnecting to chat server (Attempt ${reconnectAttempts})...`
+                    : "Connection to chat server lost"}
+                </span>
+                <span className="animate-spin h-3 w-3 text-amber-500">⟳</span>
               </div>
+
+              <button
+                onClick={() => {
+                  console.log("Manual reconnection attempt");
+                  setupWebSocket();
+                }}
+                className={`px-2 py-1 rounded text-xs ${
+                  darkMode
+                    ? "bg-amber-600 hover:bg-amber-500 text-white"
+                    : "bg-amber-500 hover:bg-amber-400 text-white"
+                } transition-colors`}
+              >
+                Reconnect Now
+              </button>
             </div>
           )}
 
