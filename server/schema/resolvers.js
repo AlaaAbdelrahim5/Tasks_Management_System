@@ -12,14 +12,22 @@ module.exports = {
     getTasks: async () => await Task.find(),
     getStudentTasks: async (_, { username }) => {
       return await Task.find({ assignedStudent: username });
-    },
-    getMessages: async (_, { senderEmail, receiverEmail }) => {
-      return await Message.find({
+    },    getMessages: async (_, { senderEmail, receiverEmail }) => {
+      const messages = await Message.find({
         $or: [
           { senderEmail, receiverEmail },
           { senderEmail: receiverEmail, receiverEmail: senderEmail },
         ],
       }).sort({ timestamp: 1 });
+      
+      // Format all timestamps as ISO strings
+      return messages.map(msg => ({
+        id: msg._id,
+        senderEmail: msg.senderEmail,
+        receiverEmail: msg.receiverEmail,
+        content: msg.content,
+        timestamp: msg.timestamp.toISOString()
+      }));
     },
     getLatestMessageCount: async (_, { senderEmail, receiverEmail }) => {
       return await Message.countDocuments({
@@ -124,10 +132,17 @@ module.exports = {
       await Project.findOneAndDelete({ id: Number(id) });
 
       return "Project and related tasks deleted.";
-    },
-    sendMessage: async (_, { senderEmail, receiverEmail, content }) => {
+    },    sendMessage: async (_, { senderEmail, receiverEmail, content }) => {
       const m = new Message({ senderEmail, receiverEmail, content });
-      return await m.save();
+      const saved = await m.save();
+      
+      return {
+        id: saved._id,
+        senderEmail: saved.senderEmail,
+        receiverEmail: saved.receiverEmail,
+        content: saved.content,
+        timestamp: saved.timestamp.toISOString()
+      };
     },
   },
 };

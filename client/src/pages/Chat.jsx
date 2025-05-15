@@ -46,7 +46,6 @@ const Chat = () => {
       }
     };
   }, []);
-
   // Set up WebSocket connection  // Function to fetch latest message timestamp for a user
   const fetchLatestMessageTimestamp = async (otherUser) => {
     try {
@@ -75,17 +74,33 @@ const Chat = () => {
       const messagesData = data.data.getMessages || [];
 
       if (messagesData.length > 0) {
-        // Sort messages by timestamp descending and get the latest one
-        messagesData.sort(
-          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-        );
-        const latestTimestamp = messagesData[0].timestamp;
+        try {
+          // Sort messages by timestamp descending and get the latest one
+          messagesData.sort((a, b) => {
+            const dateA = new Date(b.timestamp);
+            const dateB = new Date(a.timestamp);
+            
+            if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+              return 0; // Invalid dates should not change the order
+            }
+            
+            return dateA - dateB;
+          });
+          
+          const latestTimestamp = messagesData[0].timestamp;
 
-        // Update the state with this timestamp
-        setLatestMessageTimestamps((prev) => ({
-          ...prev,
-          [otherUser.email]: latestTimestamp,
-        }));
+          // Make sure it's a valid date before updating state
+          const testDate = new Date(latestTimestamp);
+          if (!isNaN(testDate.getTime())) {
+            // Update the state with this timestamp
+            setLatestMessageTimestamps((prev) => ({
+              ...prev,
+              [otherUser.email]: latestTimestamp,
+            }));
+          }
+        } catch (parseError) {
+          console.error("Error parsing message timestamps:", parseError);
+        }
       }
     } catch (error) {
       console.error("Error fetching latest message timestamp:", error);
@@ -500,29 +515,33 @@ const Chat = () => {
                     </span>
                     <span className="text-xs opacity-70 block">
                       {user.isStudent ? "Student" : "Admin"}
-                    </span>{" "}
-                    <span className="text-xs opacity-70 block mt-1">
+                    </span>{" "}                    <span className="text-xs opacity-70 block mt-1">
                       {(() => {
                         const rawDate = latestMessageTimestamps[user.email];
 
                         if (!rawDate) return "No activity yet";
 
-                        const date = new Date(rawDate);
-                        if (isNaN(date.getTime())) return "Invalid timestamp";
-
-                        return (
-                          <span title={date.toISOString()}>
-                            {date.toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                            })}
-                            ,{" "}
-                            {date.toLocaleTimeString(undefined, {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        );
+                        try {
+                          const date = new Date(rawDate);
+                          if (isNaN(date.getTime())) throw new Error("Invalid date");
+                          
+                          return (
+                            <span title={date.toISOString()}>
+                              {date.toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                              ,{" "}
+                              {date.toLocaleTimeString(undefined, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          );
+                        } catch (err) {
+                          console.error("Date parsing error:", err, rawDate);
+                          return "Recent activity";
+                        }
                       })()}
                     </span>
                   </div>
@@ -737,19 +756,30 @@ const Chat = () => {
                       }`}
                     ></div>
                     <div className="flex flex-col">
-                      <div className="break-words">{msg.content}</div>{" "}
-                      <span className="text-xs opacity-70 mt-1 text-right">
-                        {msg.timestamp && !isNaN(new Date(msg.timestamp))
-                          ? new Date(msg.timestamp).toLocaleDateString([], {
-                              month: "short",
-                              day: "numeric",
-                            }) +
-                            " " +
-                            new Date(msg.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "Invalid time"}
+                      <div className="break-words">{msg.content}</div>{" "}                      <span className="text-xs opacity-70 mt-1 text-right">
+                        {(() => {
+                          if (!msg.timestamp) return "";
+                          
+                          try {
+                            const date = new Date(msg.timestamp);
+                            if (isNaN(date.getTime())) throw new Error("Invalid date");
+                            
+                            return (
+                              date.toLocaleDateString([], {
+                                month: "short",
+                                day: "numeric",
+                              }) +
+                              " " +
+                              date.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            );
+                          } catch (err) {
+                            console.error("Message date parsing error:", err, msg.timestamp);
+                            return "Just now";
+                          }
+                        })()}
                       </span>
                     </div>
                   </div>
