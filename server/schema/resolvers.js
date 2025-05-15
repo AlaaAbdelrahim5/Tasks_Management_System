@@ -13,50 +13,21 @@ module.exports = {
     getStudentTasks: async (_, { username }) => {
       return await Task.find({ assignedStudent: username });
     },
-    getMessages: async (
-      _,
-      { senderUsername, senderEmail, receiverUsername, receiverEmail }
-    ) => {
-      const messages = await Message.find({
+    getMessages: async (_, { senderEmail, receiverEmail }) => {
+      return await Message.find({
         $or: [
-          { senderUsername, senderEmail, receiverUsername, receiverEmail },
-          {
-            senderUsername: receiverUsername,
-            senderEmail: receiverEmail,
-            receiverUsername: senderUsername,
-            receiverEmail: senderEmail,
-          },
+          { senderEmail, receiverEmail },
+          { senderEmail: receiverEmail, receiverEmail: senderEmail },
         ],
       }).sort({ timestamp: 1 });
-
-      // Format timestamps as ISO strings
-      return messages.map((msg) => ({
-        id: msg._id,
-        senderUsername: msg.senderUsername,
-        senderEmail: msg.senderEmail,
-        receiverUsername: msg.receiverUsername,
-        receiverEmail: msg.receiverEmail,
-        content: msg.content,
-        timestamp: msg.timestamp.toISOString(),
-      }));
     },
-    getLatestMessageCount: async (
-      _,
-      { senderUsername, senderEmail, receiverUsername, receiverEmail }
-    ) => {
-      // Count all messages between the two users
-      const count = await Message.countDocuments({
+    getLatestMessageCount: async (_, { senderEmail, receiverEmail }) => {
+      return await Message.countDocuments({
         $or: [
-          { senderUsername, senderEmail, receiverUsername, receiverEmail },
-          {
-            senderUsername: receiverUsername,
-            senderEmail: receiverEmail,
-            receiverUsername: senderUsername,
-            receiverEmail: senderEmail,
-          },
-        ],
+          { senderEmail,   receiverEmail },
+          { senderEmail: receiverEmail, receiverEmail: senderEmail }
+        ]
       });
-      return count;
     },
   },
 
@@ -154,18 +125,9 @@ module.exports = {
 
       return "Project and related tasks deleted.";
     },
-    sendMessage: async (
-      _,
-      { senderUsername, senderEmail, receiverUsername, receiverEmail, content }
-    ) => {
-      const message = new Message({
-        senderUsername,
-        senderEmail,
-        receiverUsername,
-        receiverEmail,
-        content,
-      });
-      return await message.save();
+    sendMessage: async (_, { senderEmail, receiverEmail, content }) => {
+      const m = new Message({ senderEmail, receiverEmail, content });
+      return await m.save();
     },
   },
 };

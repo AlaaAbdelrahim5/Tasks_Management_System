@@ -4,7 +4,7 @@ import { ThemeContext } from "../App";
 const Chat = () => {
   const { darkMode } = useContext(ThemeContext);
   const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null); // Will store {username, email}
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [newMessageNotification, setNewMessageNotification] = useState(null);
@@ -55,16 +55,17 @@ const Chat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: `
-            query GetMessages($senderUsername: String!, $senderEmail: String!, $receiverUsername: String!, $receiverEmail: String!) {
-              getMessages(senderUsername: $senderUsername, senderEmail: $senderEmail, receiverUsername: $receiverUsername, receiverEmail: $receiverEmail) {
+            query GetMessages($senderEmail: String!, $receiverEmail: String!) {
+              getMessages(senderEmail: $senderEmail, receiverEmail: $receiverEmail) {
+                id
+                senderEmail
+                receiverEmail
+                content
                 timestamp
               }
-            }
-          `,
+            }`,
           variables: {
-            senderUsername: user.username,
             senderEmail: user.email,
-            receiverUsername: otherUser.username,
             receiverEmail: otherUser.email,
           },
         }),
@@ -83,7 +84,7 @@ const Chat = () => {
         // Update the state with this timestamp
         setLatestMessageTimestamps((prev) => ({
           ...prev,
-          [`${otherUser.username}-${otherUser.email}`]: latestTimestamp,
+          [otherUser.email]: latestTimestamp,
         }));
       }
     } catch (error) {
@@ -95,18 +96,13 @@ const Chat = () => {
     wsRef.current = new WebSocket("ws://localhost:4000");
 
     wsRef.current.onopen = () => {
-      console.log("WebSocket connection established");
+      wsRef.current.send(
+        JSON.stringify({
+          type: "identify",
+          userEmail: user.email,
+        })
+      );
       setWsReady(true);
-      // Identify the user to the server
-      if (user && user.username && user.email) {
-        wsRef.current.send(
-          JSON.stringify({
-            type: "identify",
-            userId: user.username,
-            userEmail: user.email,
-          })
-        );
-      }
     };
 
     wsRef.current.onmessage = (event) => {
@@ -122,27 +118,14 @@ const Chat = () => {
           case "typing":
             if (
               selectedStudent &&
-              data.senderUsername === selectedStudent.username &&
               data.senderEmail === selectedStudent.email &&
-              data.isTyping
+              data.receiverEmail === user.email
             ) {
-              setIsTyping(true);
-              setTypingUser(data.senderUsername);
-
-              // Clear typing indicator after 3 seconds
-              if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current);
-              }
-              typingTimeoutRef.current = setTimeout(() => {
-                setIsTyping(false);
-              }, 3000);
-            } else if (
-              selectedStudent &&
-              data.senderUsername === selectedStudent.username &&
-              data.senderEmail === selectedStudent.email &&
-              !data.isTyping
-            ) {
-              setIsTyping(false);
+              setIsTyping(data.isTyping);
+              // look up their username for display
+              const u = students.find((s) => s.email === data.senderEmail);
+              setTypingUser(u?.username || data.senderEmail);
+              // …clear timeout as before…
             }
             break;
         }
@@ -192,9 +175,8 @@ const Chat = () => {
       const unreadInit = {};
       const timestampInit = {};
       filtered.forEach((u) => {
-        const userKey = `${u.username}-${u.email}`;
-        unreadInit[userKey] = 0;
-        timestampInit[userKey] = null; // Initialize with null timestamp
+        unreadInit[u.email] = 0;
+        timestampInit[u.email] = null;
       });
       setUnreadMessages(unreadInit);
       setLatestMessageTimestamps(timestampInit);
@@ -216,7 +198,7 @@ const Chat = () => {
     // Clear unread count when selecting a conversation
     setUnreadMessages((prev) => ({
       ...prev,
-      [`${selectedStudent.username}-${selectedStudent.email}`]: 0,
+      [selectedStudent.email]: 0,
     }));
   }, [selectedStudent]);
 
@@ -232,22 +214,17 @@ const Chat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: `
-            query GetMessages($senderUsername: String!, $senderEmail: String!, $receiverUsername: String!, $receiverEmail: String!) {
-              getMessages(senderUsername: $senderUsername, senderEmail: $senderEmail, receiverUsername: $receiverUsername, receiverEmail: $receiverEmail) {
+            query GetMessages($senderEmail: String!, $receiverEmail: String!) {
+              getMessages(senderEmail: $senderEmail, receiverEmail: $receiverEmail) {
                 id
-                senderUsername
                 senderEmail
-                receiverUsername
                 receiverEmail
                 content
                 timestamp
               }
-            }
-          `,
+            }`,
           variables: {
-            senderUsername: user.username,
             senderEmail: user.email,
-            receiverUsername: selectedStudent.username,
             receiverEmail: selectedStudent.email,
           },
         }),
@@ -258,7 +235,7 @@ const Chat = () => {
 
       // If there are messages, update the latest timestamp for this user
       if (messagesData.length > 0) {
-        const userKey = `${selectedStudent.username}-${selectedStudent.email}`;
+        const userKey = selectedStudent.email;
         // Find the latest message by timestamp
         const latestMessage = messagesData.reduce((latest, message) => {
           return new Date(message.timestamp) > new Date(latest.timestamp)
@@ -294,18 +271,16 @@ const Chat = () => {
       const timeWindow = 3000;
       const msgTime = new Date(message.timestamp).getTime();
 
-      // Remove matching temp messages if real version comes in
       const filtered = prev.filter((m) => {
-        if (m.id.startsWith("temp-") && isReal) {
-          const mTime = new Date(m.timestamp).getTime();
+        // match only on content + senderEmail/receiverEmail + timestamp
+        if (m.id.startsWith("temp-") && !message.id.startsWith("temp-")) {
           return !(
             m.content === message.content &&
-            m.senderUsername === message.senderUsername &&
-            m.receiverUsername === message.receiverUsername &&
-            Math.abs(mTime - msgTime) < timeWindow
+            m.senderEmail === message.senderEmail &&
+            m.receiverEmail === message.receiverEmail &&
+            Math.abs(new Date(m.timestamp) - new Date(message.timestamp)) < 3000
           );
         }
-        // Remove exact duplicates by ID
         return m.id !== message.id;
       });
 
@@ -314,10 +289,9 @@ const Chat = () => {
 
     // Update the timestamp for latest message from this user
     const userKey =
-      message.senderUsername === user.username &&
       message.senderEmail === user.email
-        ? `${message.receiverUsername}-${message.receiverEmail}`
-        : `${message.senderUsername}-${message.senderEmail}`;
+        ? message.receiverEmail
+        : message.senderEmail;
 
     setLatestMessageTimestamps((prev) => ({
       ...prev,
@@ -327,23 +301,17 @@ const Chat = () => {
     scrollToBottom();
 
     // Notify only if it's from someone else
-    if (
-      message.senderUsername !== user.username ||
-      message.senderEmail !== user.email
-    ) {
-      if (
-        !selectedStudent ||
-        message.senderUsername !== selectedStudent.username ||
-        message.senderEmail !== selectedStudent.email
-      ) {
-        const userKey = `${message.senderUsername}-${message.senderEmail}`;
+    if (message.senderEmail !== user.email) {
+      if (!selectedStudent || message.senderEmail !== selectedStudent.email) {
+        const userKey = message.senderEmail;
         setUnreadMessages((prev) => ({
           ...prev,
           [userKey]: (prev[userKey] || 0) + 1,
         }));
         playNotificationSound();
+        const sender = students.find((s) => s.email === message.senderEmail);
         setNewMessageNotification({
-          from: message.senderUsername,
+          from: sender?.username || message.senderEmail,
           count: 1,
         });
         setTimeout(() => {
@@ -362,13 +330,17 @@ const Chat = () => {
     wsRef.current.send(
       JSON.stringify({
         type: "message",
-        senderUsername: user.username,
         senderEmail: user.email,
-        receiverUsername: selectedStudent.username,
         receiverEmail: selectedStudent.email,
         content: messageContent,
       })
     );
+
+    const now = new Date().toISOString();
+    setLatestMessageTimestamps((prev) => ({
+      ...prev,
+      [selectedStudent.email]: now,
+    }));
 
     setInputMessage("");
     scrollToBottom();
@@ -381,9 +353,7 @@ const Chat = () => {
     wsRef.current.send(
       JSON.stringify({
         type: "typing",
-        senderUsername: user.username,
         senderEmail: user.email,
-        receiverUsername: selectedStudent.username,
         receiverEmail: selectedStudent.email,
         isTyping: true,
       })
@@ -395,9 +365,7 @@ const Chat = () => {
         wsRef.current.send(
           JSON.stringify({
             type: "typing",
-            senderUsername: user.username,
             senderEmail: user.email,
-            receiverUsername: selectedStudent.username,
             receiverEmail: selectedStudent.email,
             isTyping: false,
           })
@@ -483,15 +451,13 @@ const Chat = () => {
             {students
               .slice() // Create a copy to avoid mutating the original array
               .sort((a, b) => {
-                const keyA = `${a.username}-${a.email}`;
-                const keyB = `${b.username}-${b.email}`;
-                const timeA = latestMessageTimestamps[keyA]
-                  ? new Date(latestMessageTimestamps[keyA])
-                  : new Date(0);
-                const timeB = latestMessageTimestamps[keyB]
-                  ? new Date(latestMessageTimestamps[keyB])
-                  : new Date(0);
-                return timeB - timeA; // Sort in descending order (newest first)
+                const tA = latestMessageTimestamps[a.email]
+                  ? new Date(latestMessageTimestamps[a.email])
+                  : 0;
+                const tB = latestMessageTimestamps[b.email]
+                  ? new Date(latestMessageTimestamps[b.email])
+                  : 0;
+                return tB - tA;
               })
               .map((user, i) => (
                 <div
@@ -523,7 +489,7 @@ const Chat = () => {
                   >
                     {user.username.charAt(0)}
                     {/* Unread message indicator - using composite key */}
-                    {unreadMessages[`${user.username}-${user.email}`] > 0 && (
+                    {unreadMessages[user.email] > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"></span>
                     )}
                   </div>{" "}
@@ -537,8 +503,7 @@ const Chat = () => {
                     </span>{" "}
                     <span className="text-xs opacity-70 block mt-1">
                       {(() => {
-                        const key = `${user.username}-${user.email}`;
-                        const rawDate = latestMessageTimestamps[key];
+                        const rawDate = latestMessageTimestamps[user.email];
 
                         if (!rawDate) return "No activity yet";
 
@@ -740,8 +705,8 @@ const Chat = () => {
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
+                    c
                     className={`relative p-3 rounded-lg max-w-xs md:max-w-sm mb-2 chat-bubble ${
-                      msg.senderUsername === user.username &&
                       msg.senderEmail === user.email
                         ? "ml-auto message-sent " +
                           (darkMode
@@ -756,14 +721,12 @@ const Chat = () => {
                     {/* Message pointer */}
                     <div
                       className={`absolute top-2 ${
-                        msg.senderUsername === user.username &&
                         msg.senderEmail === user.email
                           ? "right-0 transform translate-x-1/2 rotate-45" +
                             (darkMode ? " bg-blue-700" : " bg-blue-400")
                           : "left-0 transform -translate-x-1/2 rotate-45" +
                             (darkMode ? " bg-gray-600" : " bg-blue-200")
                       } h-3 w-3 border-t border-r ${
-                        msg.senderUsername === user.username &&
                         msg.senderEmail === user.email
                           ? darkMode
                             ? "border-blue-700"
@@ -835,9 +798,11 @@ const Chat = () => {
           )}
 
           {/* Message input - fixed at bottom */}
-          <div className={`flex flex-col border-t-2 ${
-                darkMode ? "border-gray-700" : "border-blue-200"
-              }`}>
+          <div
+            className={`flex flex-col border-t-2 ${
+              darkMode ? "border-gray-700" : "border-blue-200"
+            }`}
+          >
             <div
               className={`flex items-center p-4 ${
                 darkMode

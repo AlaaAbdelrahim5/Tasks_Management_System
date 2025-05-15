@@ -25,175 +25,96 @@ const startServer = async () => {
   // Map to store user connections (userIdentifier -> Set of WebSocket connections)
   const userConnections = new Map();
 
-  // Helper function to create a unique identifier from username and email
-  const createUserIdentifier = (username, email) => {
-    return `${username}|${email}`;
-  };
+  // Helper function to create a unique identifier from email
+  const createUserIdentifier = (email) => email;
 
   // Helper function to register a connection
-  const registerConnection = (userId, userEmail, ws) => {
-    const userIdentifier = createUserIdentifier(userId, userEmail);
-    if (!userConnections.has(userIdentifier)) {
-      userConnections.set(userIdentifier, new Set());
-    }
-    userConnections.get(userIdentifier).add(ws);
-    console.log(
-      `User ${userId} (${userEmail}) has ${
-        userConnections.get(userIdentifier).size
-      } active connections`
-    );
+  const registerConnection = (email, ws) => {
+    const id = createUserIdentifier(email);
+    if (!userConnections.has(id)) userConnections.set(id, new Set());
+    userConnections.get(id).add(ws);
   };
 
   // Helper function to unregister a connection
-  const unregisterConnection = (userId, userEmail, ws) => {
-    const userIdentifier = createUserIdentifier(userId, userEmail);
-    if (userConnections.has(userIdentifier)) {
-      userConnections.get(userIdentifier).delete(ws);
-      if (userConnections.get(userIdentifier).size === 0) {
-        userConnections.delete(userIdentifier);
-      }
-      console.log(
-        `User ${userId} (${userEmail}) disconnected. Connections left: ${
-          userConnections.has(userIdentifier)
-            ? userConnections.get(userIdentifier).size
-            : 0
-        }`
-      );
+  const unregisterConnection = (email, ws) => {
+    const id = createUserIdentifier(email);
+    if (userConnections.has(id)) {
+      const conns = userConnections.get(id);
+      conns.delete(ws);
+      if (conns.size === 0) userConnections.delete(id);
     }
   };
 
   // WebSocket connection handler
   wss.on("connection", (ws) => {
-    console.log("Client connected to WebSocket");
+    ws.on("message", async (msg) => {
+      const data = JSON.parse(msg);
+      switch (data.type) {
+        case "identify":
+          ws.userEmail = data.userEmail;
+          registerConnection(data.userEmail, ws);
+          break;
 
-    // Keep track of user identity
-    let userId = null;
-
-    ws.on("message", async (message) => {
-      try {
-        const data = JSON.parse(message);
-        console.log("Received WebSocket message:", data);
-
-        switch (data.type) {
-          case "identify":
-            // Store the user identifier
-            userId = data.userId;
-            userEmail = data.userEmail;
-            ws.userId = userId;
-            ws.userEmail = userEmail;
-            // Register this connection for the user
-            registerConnection(userId, userEmail, ws);
-            console.log(`User identified as: ${userId} (${userEmail})`);
-            break;
-          case "message":
-            if (
-              data.senderUsername &&
-              data.senderEmail &&
-              data.receiverUsername &&
-              data.receiverEmail &&
-              data.content
-            ) {
-              try {
-                // Save message to DB
-                const newMessage = new Message({
-                  senderUsername: data.senderUsername,
-                  senderEmail: data.senderEmail,
-                  receiverUsername: data.receiverUsername,
-                  receiverEmail: data.receiverEmail,
-                  content: data.content,
-                });
-
-                const savedMessage = await newMessage.save();
-
-                const persistentMessageObj = {
-                  type: "message",
-                  message: {
-                    id: savedMessage._id,
-                    senderUsername: savedMessage.senderUsername,
-                    senderEmail: savedMessage.senderEmail,
-                    receiverUsername: savedMessage.receiverUsername,
-                    receiverEmail: savedMessage.receiverEmail,
-                    content: savedMessage.content,
-                    timestamp: savedMessage.timestamp.toISOString(),
-                  },
-                };
-
-                const updatedSenderId = createUserIdentifier(
-                  savedMessage.senderUsername,
-                  savedMessage.senderEmail
+        case "message":
+          if (data.senderEmail && data.receiverEmail && data.content) {
+            const saved = await new Message({
+              senderEmail: data.senderEmail,
+              receiverEmail: data.receiverEmail,
+              content: data.content,
+            }).save();
+            const out = {
+              type: "message",
+              message: {
+                id: saved._id,
+                senderEmail: saved.senderEmail,
+                receiverEmail: saved.receiverEmail,
+                content: saved.content,
+                timestamp: saved.timestamp.toISOString(),
+              },
+            };
+            const ids = [
+              createUserIdentifier(saved.senderEmail),
+              createUserIdentifier(saved.receiverEmail),
+            ];
+            ids.forEach((id) => {
+              const set = userConnections.get(id);
+              if (set)
+                set.forEach(
+                  (c) =>
+                    c.readyState === WebSocket.OPEN &&
+                    c.send(JSON.stringify(out))
                 );
-                const updatedReceiverId = createUserIdentifier(
-                  savedMessage.receiverUsername,
-                  savedMessage.receiverEmail
-                );
+            });
+          }
+          break;
 
-                // Broadcast saved message to sender
-                if (userConnections.has(updatedSenderId)) {
-                  userConnections.get(updatedSenderId).forEach((conn) => {
-                    if (conn.readyState === WebSocket.OPEN) {
-                      conn.send(JSON.stringify(persistentMessageObj));
-                    }
-                  });
-                }
-
-                // Broadcast saved message to receiver
-                if (userConnections.has(updatedReceiverId)) {
-                  userConnections.get(updatedReceiverId).forEach((conn) => {
-                    if (conn.readyState === WebSocket.OPEN) {
-                      conn.send(JSON.stringify(persistentMessageObj));
-                    }
-                  });
-                }
-
-                console.log(
-                  `Message sent from ${data.senderUsername} to ${data.receiverUsername}: "${data.content}"`
-                );
-              } catch (error) {
-                console.error("Error handling message:", error);
-              }
-            }
-            break;
-
-          case "typing":
-            // Forward typing status to all recipient's connections
-            const receiverIdentifier = createUserIdentifier(
-              data.receiverUsername,
-              data.receiverEmail
+        case "typing":
+          if (data.senderEmail && data.receiverEmail) {
+            const out = {
+              type: "typing",
+              senderEmail: data.senderEmail,
+              receiverEmail: data.receiverEmail,
+              isTyping: data.isTyping,
+            };
+            const set = userConnections.get(
+              createUserIdentifier(data.receiverEmail)
             );
-            if (userConnections.has(receiverIdentifier)) {
-              const typingData = JSON.stringify({
-                type: "typing",
-                senderUsername: data.senderUsername,
-                senderEmail: data.senderEmail,
-                receiverUsername: data.receiverUsername,
-                receiverEmail: data.receiverEmail,
-                isTyping: data.isTyping,
-              });
+            if (set)
+              set.forEach(
+                (c) =>
+                  c.readyState === WebSocket.OPEN && c.send(JSON.stringify(out))
+              );
+          }
+          break;
+      }
+    });
 
-              userConnections.get(receiverIdentifier).forEach((conn) => {
-                if (conn.readyState === WebSocket.OPEN) {
-                  conn.send(typingData);
-                }
-              });
-            }
-            break;
-        }
-      } catch (error) {
-        console.error("WebSocket message error:", error);
-      }
-    });
     ws.on("close", () => {
-      if (userId && ws.userEmail) {
-        unregisterConnection(userId, ws.userEmail, ws);
-      }
-      console.log("Client disconnected from WebSocket");
+      if (ws.userEmail) unregisterConnection(ws.userEmail, ws);
     });
-    // Handle errors
-    ws.on("error", (error) => {
-      console.error("WebSocket connection error:", error);
-      if (userId && ws.userEmail) {
-        unregisterConnection(userId, ws.userEmail, ws);
-      }
+
+    ws.on("error", () => {
+      if (ws.userEmail) unregisterConnection(ws.userEmail, ws);
     });
   });
 

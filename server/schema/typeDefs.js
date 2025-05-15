@@ -29,12 +29,10 @@ module.exports = gql`
     status: String!
     dueDate: String!
   }
-  
+
   type Message {
     id: ID!
-    senderUsername: String!
     senderEmail: String!
-    receiverUsername: String!
     receiverEmail: String!
     content: String!
     timestamp: String!
@@ -72,8 +70,8 @@ module.exports = gql`
     getAllUsers: [User]
     getTasks: [Task]
     getStudentTasks(username: String!): [Task]
-    getMessages(senderUsername: String!, senderEmail: String!, receiverUsername: String!, receiverEmail: String!): [Message]
-    getLatestMessageCount(senderUsername: String!, senderEmail: String!, receiverUsername: String!, receiverEmail: String!): Int
+    getMessages(senderEmail: String!, receiverEmail: String!): [Message]
+    getLatestMessageCount(senderEmail: String!, receiverEmail: String!): Int
   }
 
   type Mutation {
@@ -85,10 +83,6 @@ module.exports = gql`
     deleteTask(id: ID!): Task
     updateTaskStatus(id: ID!, status: String!): Task
     deleteProject(id: ID!): String
-    sendMessage(senderUsername: String!, senderEmail: String!, receiverUsername: String!, receiverEmail: String!, content: String!): Message
-  }
-
-  type Subscription {
-    messageReceived(receiverUsername: String!, receiverEmail: String!): Message
+    sendMessage(senderEmail: String!, receiverEmail: String!, content: String!): Message
   }
 `;
