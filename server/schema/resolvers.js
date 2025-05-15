@@ -12,14 +12,23 @@ module.exports = {
     getTasks: async () => await Task.find(),
     getStudentTasks: async (_, { username }) => {
       return await Task.find({ assignedStudent: username });
-    },
-    getMessages: async (_, { sender, receiver }) => {
+    },    getMessages: async (_, { senderUsername, senderEmail, receiverUsername, receiverEmail }) => {
       return await Message.find({
         $or: [
-          { sender, receiver },
-          { sender: receiver, receiver: sender },
+          { senderUsername, senderEmail, receiverUsername, receiverEmail },
+          { senderUsername: receiverUsername, senderEmail: receiverEmail, receiverUsername: senderUsername, receiverEmail: senderEmail },
         ],
       }).sort({ timestamp: 1 });
+    },
+    getLatestMessageCount: async (_, { senderUsername, senderEmail, receiverUsername, receiverEmail }) => {
+      // Count all messages between the two users
+      const count = await Message.countDocuments({
+        $or: [
+          { senderUsername, senderEmail, receiverUsername, receiverEmail },
+          { senderUsername: receiverUsername, senderEmail: receiverEmail, receiverUsername: senderUsername, receiverEmail: senderEmail },
+        ],
+      });
+      return count;
     },
   },
 
@@ -113,10 +122,14 @@ module.exports = {
       await Project.findOneAndDelete({ id: Number(id) });
 
       return "Project and related tasks deleted.";
-    },
-
-    sendMessage: async (_, { sender, receiver, content }) => {
-      const message = new Message({ sender, receiver, content });
+    },    sendMessage: async (_, { senderUsername, senderEmail, receiverUsername, receiverEmail, content }) => {
+      const message = new Message({ 
+        senderUsername, 
+        senderEmail, 
+        receiverUsername, 
+        receiverEmail, 
+        content 
+      });
       return await message.save();
     },
   },

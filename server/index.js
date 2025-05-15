@@ -58,106 +58,108 @@ const startServer = async () => {
         const data = JSON.parse(message);
         console.log("Received WebSocket message:", data);
 
-        switch (data.type) {
-          case "identify":
+        switch (data.type) {          case "identify":
             // Store the user identifier
             userId = data.userId;
             ws.userId = userId;
+            ws.userEmail = data.userEmail;
             // Register this connection for the user
             registerConnection(userId, ws);
-            console.log(`User identified as: ${userId}`);
+            console.log(`User identified as: ${userId} (${data.userEmail})`);
             break;          case "message":
             // Save message to database
-            if (data.sender && data.receiver && data.content) {
+            if (data.senderUsername && data.senderEmail && data.receiverUsername && data.receiverEmail && data.content) {
               try {
                 // First, immediately broadcast to reduce perceived latency
                 const tempMessageId = `temp-${Date.now()}`;
                 const tempTimestamp = Date.now().toString();
-                
-                // Create temporary message object
+                  // Create temporary message object
                 const tempMessageObj = {
                   type: "message",
                   message: {
                     id: tempMessageId,
-                    sender: data.sender,
-                    receiver: data.receiver,
+                    senderUsername: data.senderUsername,
+                    senderEmail: data.senderEmail,
+                    receiverUsername: data.receiverUsername,
+                    receiverEmail: data.receiverEmail,
                     content: data.content,
                     timestamp: tempTimestamp
                   }
                 };
-                
-                // Send to all sender's connections
-                if (userConnections.has(data.sender)) {
-                  userConnections.get(data.sender).forEach(conn => {
+                  // Send to all sender's connections
+                if (userConnections.has(data.senderUsername)) {
+                  userConnections.get(data.senderUsername).forEach(conn => {
                     if (conn.readyState === WebSocket.OPEN) {
                       conn.send(JSON.stringify(tempMessageObj));
                     }
                   });
                 }
-                
-                // Send to all receiver's connections
-                if (userConnections.has(data.receiver)) {
-                  userConnections.get(data.receiver).forEach(conn => {
+                  // Send to all receiver's connections
+                if (userConnections.has(data.receiverUsername)) {
+                  userConnections.get(data.receiverUsername).forEach(conn => {
                     if (conn.readyState === WebSocket.OPEN) {
                       conn.send(JSON.stringify(tempMessageObj));
                     }
                   });
                 }
-                
-                // Then save to database for persistence
+                  // Then save to database for persistence
                 const newMessage = new Message({
-                  sender: data.sender,
-                  receiver: data.receiver,
+                  senderUsername: data.senderUsername,
+                  senderEmail: data.senderEmail,
+                  receiverUsername: data.receiverUsername,
+                  receiverEmail: data.receiverEmail,
                   content: data.content
                 });
                 
                 const savedMessage = await newMessage.save();
-                
-                // Create persistent message object
+                  // Create persistent message object
                 const persistentMessageObj = {
                   type: "message",
                   message: {
                     id: savedMessage._id,
-                    sender: savedMessage.sender,
-                    receiver: savedMessage.receiver,
+                    senderUsername: savedMessage.senderUsername,
+                    senderEmail: savedMessage.senderEmail,
+                    receiverUsername: savedMessage.receiverUsername,
+                    receiverEmail: savedMessage.receiverEmail,
                     content: savedMessage.content,
                     timestamp: savedMessage.timestamp
                   }
                 };
-                
-                // Update all sender's connections with the official ID and timestamp
-                if (userConnections.has(data.sender)) {
-                  userConnections.get(data.sender).forEach(conn => {
+                  // Update all sender's connections with the official ID and timestamp
+                if (userConnections.has(data.senderUsername)) {
+                  userConnections.get(data.senderUsername).forEach(conn => {
+                    if (conn.readyState === WebSocket.OPEN) {
+                      conn.send(JSON.stringify(persistentMessageObj));
+                    }
+                  });
+                }
+                  // Update all receiver's connections with the official ID and timestamp
+                if (userConnections.has(data.receiverUsername)) {
+                  userConnections.get(data.receiverUsername).forEach(conn => {
                     if (conn.readyState === WebSocket.OPEN) {
                       conn.send(JSON.stringify(persistentMessageObj));
                     }
                   });
                 }
                 
-                // Update all receiver's connections with the official ID and timestamp
-                if (userConnections.has(data.receiver)) {
-                  userConnections.get(data.receiver).forEach(conn => {
-                    if (conn.readyState === WebSocket.OPEN) {
-                      conn.send(JSON.stringify(persistentMessageObj));
-                    }
-                  });
-                }
-                
-                console.log(`Message sent from ${data.sender} to ${data.receiver}: "${data.content}"`);
+                console.log(`Message sent from ${data.senderUsername} (${data.senderEmail}) to ${data.receiverUsername} (${data.receiverEmail}): "${data.content}"`);
               } catch (error) {
                 console.error("Error handling message:", error);
               }
             }
             break;          case "typing":
             // Forward typing status to all recipient's connections
-            if (userConnections.has(data.receiver)) {
+            if (userConnections.has(data.receiverUsername)) {
               const typingData = JSON.stringify({
                 type: "typing",
-                sender: data.sender,
+                senderUsername: data.senderUsername,
+                senderEmail: data.senderEmail,
+                receiverUsername: data.receiverUsername,
+                receiverEmail: data.receiverEmail,
                 isTyping: data.isTyping
               });
               
-              userConnections.get(data.receiver).forEach(conn => {
+              userConnections.get(data.receiverUsername).forEach(conn => {
                 if (conn.readyState === WebSocket.OPEN) {
                   conn.send(typingData);
                 }

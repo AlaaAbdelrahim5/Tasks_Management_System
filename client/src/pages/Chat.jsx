@@ -1,10 +1,9 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { ThemeContext } from "../App";
 
-const Chat = () => {
-  const { darkMode } = useContext(ThemeContext);
+const Chat = () => {  const { darkMode } = useContext(ThemeContext);
   const [students, setStudents] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null); // Will store {username, email}
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [newMessageNotification, setNewMessageNotification] = useState(null);
@@ -28,7 +27,6 @@ const Chat = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
   // Get all users for the sidebar and set up WebSocket connection
   useEffect(() => {
     fetchUsers();
@@ -54,12 +52,12 @@ const Chat = () => {
     wsRef.current.onopen = () => {
       console.log('WebSocket connection established');
       setWsReady(true);
-      
-      // Identify the user to the server
-      if (user && user.username) {
+        // Identify the user to the server
+      if (user && user.username && user.email) {
         wsRef.current.send(JSON.stringify({
           type: 'identify',
-          userId: user.username
+          userId: user.username,
+          userEmail: user.email
         }));
       }
     };
@@ -75,9 +73,12 @@ const Chat = () => {
             break;
             
           case 'typing':
-            if (data.sender === selectedStudent && data.isTyping) {
+            if (selectedStudent && 
+                data.senderUsername === selectedStudent.username && 
+                data.senderEmail === selectedStudent.email && 
+                data.isTyping) {
               setIsTyping(true);
-              setTypingUser(data.sender);
+              setTypingUser(data.senderUsername);
               
               // Clear typing indicator after 3 seconds
               if (typingTimeoutRef.current) {
@@ -86,7 +87,10 @@ const Chat = () => {
               typingTimeoutRef.current = setTimeout(() => {
                 setIsTyping(false);
               }, 3000);
-            } else if (data.sender === selectedStudent && !data.isTyping) {
+            } else if (selectedStudent && 
+                       data.senderUsername === selectedStudent.username && 
+                       data.senderEmail === selectedStudent.email && 
+                       !data.isTyping) {
               setIsTyping(false);
             }
             break;
@@ -119,6 +123,7 @@ const Chat = () => {
             query {
               getAllUsers {
                 username
+                email
                 isStudent
               }
             }
@@ -131,10 +136,10 @@ const Chat = () => {
       const filtered = allUsers.filter((u) => u.username !== user.username);
       setStudents(filtered);
       
-      // Initialize unread messages count
+      // Initialize unread messages count with composite keys
       const unreadInit = {};
       filtered.forEach(u => {
-        unreadInit[u.username] = 0;
+        unreadInit[`${u.username}-${u.email}`] = 0;
       });
       setUnreadMessages(unreadInit);
     } catch (err) {
@@ -150,7 +155,7 @@ const Chat = () => {
     // Clear unread count when selecting a conversation
     setUnreadMessages(prev => ({
       ...prev,
-      [selectedStudent]: 0
+      [`${selectedStudent.username}-${selectedStudent.email}`]: 0
     }));
   }, [selectedStudent]);
 
@@ -166,19 +171,23 @@ const Chat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: `
-            query GetMessages($sender: String!, $receiver: String!) {
-              getMessages(sender: $sender, receiver: $receiver) {
+            query GetMessages($senderUsername: String!, $senderEmail: String!, $receiverUsername: String!, $receiverEmail: String!) {
+              getMessages(senderUsername: $senderUsername, senderEmail: $senderEmail, receiverUsername: $receiverUsername, receiverEmail: $receiverEmail) {
                 id
-                sender
-                receiver
+                senderUsername
+                senderEmail
+                receiverUsername
+                receiverEmail
                 content
                 timestamp
               }
             }
           `,
           variables: {
-            sender: user.username,
-            receiver: selectedStudent,
+            senderUsername: user.username,
+            senderEmail: user.email,
+            receiverUsername: selectedStudent.username,
+            receiverEmail: selectedStudent.email,
           },
         }),
       });
@@ -199,23 +208,32 @@ const Chat = () => {
     const audio = new Audio('/notification.mp3');
     audio.play().catch(e => console.log("Audio play failed:", e));
   };
+  
   // Handle incoming WebSocket messages
   const handleIncomingMessage = (message) => {
     // Check if this is a new conversation or from someone else to trigger notifications
-    if (message.sender !== user.username && message.sender !== selectedStudent) {
+    if (
+      message.senderUsername !== user.username && 
+      message.senderEmail !== user.email && 
+      (!selectedStudent || message.senderUsername !== selectedStudent.username || message.senderEmail !== selectedStudent.email)
+    ) {
       // Find the user data for this sender
-      const senderData = students.find(s => s.username === message.sender);
+      const senderData = students.find(s => 
+        s.username === message.senderUsername && 
+        s.email === message.senderEmail
+      );
       
       if (senderData) {
-        // Update unread messages count
+        // Update unread messages count using a composite key
+        const userKey = `${message.senderUsername}-${message.senderEmail}`;
         setUnreadMessages(prev => ({
           ...prev,
-          [message.sender]: (prev[message.sender] || 0) + 1
+          [userKey]: (prev[userKey] || 0) + 1
         }));
         
         // Show notification
         setNewMessageNotification({
-          from: message.sender,
+          from: message.senderUsername,
           count: 1
         });
         
@@ -225,7 +243,10 @@ const Chat = () => {
         // Move conversation to top
         setStudents([
           senderData,
-          ...students.filter(s => s.username !== message.sender)
+          ...students.filter(s => 
+            s.username !== message.senderUsername || 
+            s.email !== message.senderEmail
+          )
         ]);
         
         // Auto-dismiss notification after 5 seconds
@@ -236,12 +257,18 @@ const Chat = () => {
     }
     
     // Handle messages for the current conversation
-    if (
-      (message.sender === user.username && message.receiver === selectedStudent) || 
-      (message.sender === selectedStudent && message.receiver === user.username)
-    ) {
+    if (selectedStudent && (
+      (message.senderUsername === user.username && 
+       message.senderEmail === user.email && 
+       message.receiverUsername === selectedStudent.username && 
+       message.receiverEmail === selectedStudent.email) || 
+      (message.senderUsername === selectedStudent.username && 
+       message.senderEmail === selectedStudent.email && 
+       message.receiverUsername === user.username && 
+       message.receiverEmail === user.email)
+    )) {
       // If it's a message from the current user, replace the temp message
-      if (message.sender === user.username) {
+      if (message.senderUsername === user.username && message.senderEmail === user.email) {
         setMessages(prev => 
           prev.map(msg => 
             // Find a temporary message with the same content and replace it with the server version
@@ -266,6 +293,7 @@ const Chat = () => {
       }
     }
   };
+  
   const handleSend = () => {
     if (!inputMessage.trim() || !selectedStudent || !wsReady) return;
     
@@ -274,20 +302,23 @@ const Chat = () => {
     // Create message object with temporary ID before server assigns one
     const tempMessage = {
       id: `temp-${Date.now()}`,
-      sender: user.username,
-      receiver: selectedStudent,
+      senderUsername: user.username,
+      senderEmail: user.email,
+      receiverUsername: selectedStudent.username,
+      receiverEmail: selectedStudent.email,
       content: messageContent,
       timestamp: new Date().getTime().toString()
     };
     
     // Immediately add message to UI
     setMessages(prev => [...prev, tempMessage]);
-    
-    // Send message through WebSocket
+      // Send message through WebSocket
     wsRef.current.send(JSON.stringify({
       type: 'message',
-      sender: user.username,
-      receiver: selectedStudent,
+      senderUsername: user.username,
+      senderEmail: user.email,
+      receiverUsername: selectedStudent.username,
+      receiverEmail: selectedStudent.email,
       content: messageContent
     }));
     
@@ -295,12 +326,18 @@ const Chat = () => {
     scrollToBottom();
     
     // Move this conversation to the top of the list
-    const currentStudent = students.find(s => s.username === selectedStudent);
+    const currentStudent = students.find(s => 
+      s.username === selectedStudent.username && 
+      s.email === selectedStudent.email
+    );
     if (currentStudent) {
-      console.log(`Moving ${selectedStudent} to top after sending message`);
+      console.log(`Moving ${selectedStudent.username} to top after sending message`);
       setStudents([
         currentStudent,
-        ...students.filter(s => s.username !== selectedStudent)
+        ...students.filter(s => 
+          s.username !== selectedStudent.username || 
+          s.email !== selectedStudent.email
+        )
       ]);
     }
   };
@@ -311,8 +348,10 @@ const Chat = () => {
     
     wsRef.current.send(JSON.stringify({
       type: 'typing',
-      sender: user.username,
-      receiver: selectedStudent,
+      senderUsername: user.username,
+      senderEmail: user.email,
+      receiverUsername: selectedStudent.username,
+      receiverEmail: selectedStudent.email,
       isTyping: true
     }));
     
@@ -321,8 +360,10 @@ const Chat = () => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({
           type: 'typing',
-          sender: user.username,
-          receiver: selectedStudent,
+          senderUsername: user.username,
+          senderEmail: user.email,
+          receiverUsername: selectedStudent.username,
+          receiverEmail: selectedStudent.email,
           isTyping: false
         }));
       }
@@ -386,9 +427,9 @@ const Chat = () => {
             {students.map((user, i) => (
               <div
                 key={i}
-                onClick={() => setSelectedStudent(user.username)}
+                onClick={() => setSelectedStudent({username: user.username, email: user.email})}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                  selectedStudent === user.username ? 
+                  selectedStudent && selectedStudent.username === user.username && selectedStudent.email === user.email ? 
                     (darkMode ? "bg-blue-900/40 border-l-4 border-blue-500 shadow-md" : "bg-blue-50 border-l-4 border-blue-500 shadow-md") : 
                     (darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600 hover:translate-x-1" : "bg-gray-50 text-gray-800 hover:bg-gray-100 hover:translate-x-1 border border-gray-100")
                 }`}
@@ -399,20 +440,23 @@ const Chat = () => {
                   } relative`}
                 >
                   {user.username.charAt(0)}
-                  {/* Unread message indicator */}
-                  {unreadMessages[user.username] > 0 && (
+                  {/* Unread message indicator - using composite key */}
+                  {unreadMessages[`${user.username}-${user.email}`] > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadMessages[user.username] > 9 ? '9+' : unreadMessages[user.username]}
+                      {unreadMessages[`${user.username}-${user.email}`] > 9 ? '9+' : unreadMessages[`${user.username}-${user.email}`]}
                     </span>
                   )}
                 </div>
                 <div className="flex-1">
                   <span className="font-medium">{user.username}</span>
                   <span className="text-xs opacity-70 block">
+                    {user.email}
+                  </span>
+                  <span className="text-xs opacity-70 block">
                     {user.isStudent ? "Student" : "Admin"}
                   </span>
                 </div>
-                {selectedStudent === user.username && (
+                {selectedStudent && selectedStudent.username === user.username && selectedStudent.email === user.email && (
                   <div className="ml-auto md:hidden">
                     <button
                       onClick={(e) => {
@@ -457,12 +501,12 @@ const Chat = () => {
                   <div className={`w-9 h-9 mr-3 rounded-full flex items-center justify-center shadow-md ${
                     darkMode ? "bg-blue-600 ring-2 ring-blue-400" : "bg-blue-500 ring-2 ring-blue-300"
                   } text-white`}>
-                    {selectedStudent.charAt(0).toUpperCase()}
+                    {selectedStudent.username.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-lg">Chatting with {selectedStudent}</span>
+                    <span className="text-lg">Chatting with {selectedStudent.username}</span>
                     <span className="text-xs opacity-70">
-                      {students.find(s => s.username === selectedStudent)?.isStudent ? "Student" : "Admin"}
+                      {selectedStudent.email}
                     </span>
                   </div>
                 </div>
@@ -490,8 +534,8 @@ const Chat = () => {
               </>
             ) : (
               <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 <span>Select a user to start chatting</span>
               </div>
@@ -531,7 +575,7 @@ const Chat = () => {
                   <div
                     key={msg.id}
                     className={`relative p-3 rounded-lg max-w-xs md:max-w-sm mb-2 chat-bubble ${
-                      msg.sender === user.username
+                      msg.senderUsername === user.username && msg.senderEmail === user.email
                         ? "ml-auto message-sent " +
                           (darkMode
                             ? "bg-blue-600 text-white border border-blue-700 shadow-md"
@@ -546,7 +590,7 @@ const Chat = () => {
                     {/* Message pointer */}
                     <div 
                       className={`absolute top-2 ${
-                        msg.sender === user.username 
+                        msg.senderUsername === user.username && msg.senderEmail === user.email
                           ? "right-0 transform translate-x-1/2 rotate-45" +
                             (darkMode
                               ? " bg-blue-700"
@@ -556,7 +600,7 @@ const Chat = () => {
                               ? " bg-gray-600"
                               : " bg-blue-200")
                       } h-3 w-3 border-t border-r ${
-                        msg.sender === user.username
+                        msg.senderUsername === user.username && msg.senderEmail === user.email
                           ? darkMode
                             ? "border-blue-700"
                             : "border-blue-400"
@@ -578,36 +622,36 @@ const Chat = () => {
             )}
           </div>
           
+          {/* Typing indicator */}
+          {isTyping && selectedStudent && (
+            <div className={`px-4 py-1 text-xs ${
+              darkMode ? "text-blue-300" : "text-blue-600"
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">{typingUser} is typing</span>
+                <span className="flex">
+                  <span className="animate-bounce mx-0.5 w-1.5 h-1.5 rounded-full bg-current"></span>
+                  <span className="animate-bounce mx-0.5 w-1.5 h-1.5 rounded-full bg-current" style={{animationDelay: '0.2s'}}></span>
+                  <span className="animate-bounce mx-0.5 w-1.5 h-1.5 rounded-full bg-current" style={{animationDelay: '0.4s'}}></span>
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {/* WebSocket connection status */}
+          {!wsReady && selectedStudent && (
+            <div className={`px-4 py-1 text-xs ${
+              darkMode ? "text-amber-300" : "text-amber-600"
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">Reconnecting to chat server...</span>
+                <span className="animate-spin h-3 w-3">⟳</span>
+              </div>
+            </div>
+          )}
+          
           {/* Message input - fixed at bottom */}
           <div className="flex flex-col border-t">
-            {/* Typing indicator */}
-            {isTyping && selectedStudent && (
-              <div className={`px-4 py-1 text-xs ${
-                darkMode ? "text-blue-300" : "text-blue-600"
-              }`}>
-                <div className="flex items-center">
-                  <span className="mr-2">{typingUser} is typing</span>
-                  <span className="flex">
-                    <span className="animate-bounce mx-0.5 w-1.5 h-1.5 rounded-full bg-current"></span>
-                    <span className="animate-bounce mx-0.5 w-1.5 h-1.5 rounded-full bg-current" style={{animationDelay: '0.2s'}}></span>
-                    <span className="animate-bounce mx-0.5 w-1.5 h-1.5 rounded-full bg-current" style={{animationDelay: '0.4s'}}></span>
-                  </span>
-                </div>
-              </div>
-            )}
-            
-            {/* WebSocket connection status */}
-            {!wsReady && selectedStudent && (
-              <div className={`px-4 py-1 text-xs ${
-                darkMode ? "text-amber-300" : "text-amber-600"
-              }`}>
-                <div className="flex items-center">
-                  <span className="mr-2">Reconnecting to chat server...</span>
-                  <span className="animate-spin h-3 w-3">⟳</span>
-                </div>
-              </div>
-            )}
-            
             <div
               className={`flex items-center p-4 ${
                 darkMode
