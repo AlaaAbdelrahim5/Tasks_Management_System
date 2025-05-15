@@ -94,47 +94,6 @@ const startServer = async () => {
               data.content
             ) {
               try {
-                // Immediately broadcast temp message
-                // const tempMessageObj = {
-                //   type: "message",
-                //   message: {
-                //     id: `temp-${Date.now()}`,
-                //     senderUsername: data.senderUsername,
-                //     senderEmail: data.senderEmail,
-                //     receiverUsername: data.receiverUsername,
-                //     receiverEmail: data.receiverEmail,
-                //     content: data.content,
-                //     timestamp: Date.now().toString(),
-                //   },
-                // };
-
-                // const senderIdentifier = createUserIdentifier(
-                //   data.senderUsername,
-                //   data.senderEmail
-                // );
-                const receiverIdentifier = createUserIdentifier(
-                  data.receiverUsername,
-                  data.receiverEmail
-                );
-
-                // Broadcast temporary message to sender
-                // if (userConnections.has(senderIdentifier)) {
-                //   userConnections.get(senderIdentifier).forEach((conn) => {
-                //     if (conn.readyState === WebSocket.OPEN) {
-                //       conn.send(JSON.stringify(tempMessageObj));
-                //     }
-                //   });
-                // }
-
-                // // Broadcast temporary message to receiver
-                // if (userConnections.has(receiverIdentifier)) {
-                //   userConnections.get(receiverIdentifier).forEach((conn) => {
-                //     if (conn.readyState === WebSocket.OPEN) {
-                //       conn.send(JSON.stringify(tempMessageObj));
-                //     }
-                //   });
-                // }
-
                 // Save message to DB
                 const newMessage = new Message({
                   senderUsername: data.senderUsername,
@@ -155,7 +114,7 @@ const startServer = async () => {
                     receiverUsername: savedMessage.receiverUsername,
                     receiverEmail: savedMessage.receiverEmail,
                     content: savedMessage.content,
-                    timestamp: savedMessage.timestamp,
+                    timestamp: savedMessage.timestamp.toISOString(),
                   },
                 };
 
