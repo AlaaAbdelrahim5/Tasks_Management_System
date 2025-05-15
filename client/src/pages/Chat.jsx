@@ -209,137 +209,73 @@ const Chat = () => {  const { darkMode } = useContext(ThemeContext);
   };
   
   // Handle incoming WebSocket messages
-  const handleIncomingMessage = (message) => {
-    // Check if this is a new conversation or from someone else to trigger notifications
+const handleIncomingMessage = (message) => {
+  // Append the message
+  setMessages(prev => {
+    const combined = [...prev, message];
+
+    // Deduplicate by ID
+    const unique = [];
+    const seen = new Set();
+
+    for (let msg of combined) {
+      if (!seen.has(msg.id)) {
+        seen.add(msg.id);
+        unique.push(msg);
+      }
+    }
+
+    return unique;
+  });
+
+  scrollToBottom();
+
+  // If it's from someone else and not the current chat
+  if (
+    message.senderUsername !== user.username ||
+    message.senderEmail !== user.email
+  ) {
     if (
-      message.senderUsername !== user.username && 
-      message.senderEmail !== user.email && 
-      (!selectedStudent || message.senderUsername !== selectedStudent.username || message.senderEmail !== selectedStudent.email)
+      !selectedStudent ||
+      message.senderUsername !== selectedStudent.username ||
+      message.senderEmail !== selectedStudent.email
     ) {
-      // Find the user data for this sender
-      const senderData = students.find(s => 
-        s.username === message.senderUsername && 
-        s.email === message.senderEmail
-      );
-      
-      if (senderData) {
-        // Update unread messages count using a composite key
-        const userKey = `${message.senderUsername}-${message.senderEmail}`;
-        setUnreadMessages(prev => ({
-          ...prev,
-          [userKey]: (prev[userKey] || 0) + 1
-        }));
-        
-        // Show notification
-        setNewMessageNotification({
-          from: message.senderUsername,
-          count: 1
-        });
-        
-        // Play sound
-        playNotificationSound();
-        
-        // Move conversation to top
-        setStudents([
-          senderData,
-          ...students.filter(s => 
-            s.username !== message.senderUsername || 
-            s.email !== message.senderEmail
-          )
-        ]);
-        
-        // Auto-dismiss notification after 5 seconds
-        setTimeout(() => {
-          setNewMessageNotification(null);
-        }, 5000);
-      }
+      const userKey = `${message.senderUsername}-${message.senderEmail}`;
+      setUnreadMessages(prev => ({
+        ...prev,
+        [userKey]: (prev[userKey] || 0) + 1
+      }));
+      playNotificationSound();
+      setNewMessageNotification({
+        from: message.senderUsername,
+        count: 1
+      });
+      setTimeout(() => {
+        setNewMessageNotification(null);
+      }, 5000);
     }
-    
-    // Handle messages for the current conversation
-    if (selectedStudent && (
-      (message.senderUsername === user.username && 
-       message.senderEmail === user.email && 
-       message.receiverUsername === selectedStudent.username && 
-       message.receiverEmail === selectedStudent.email) || 
-      (message.senderUsername === selectedStudent.username && 
-       message.senderEmail === selectedStudent.email && 
-       message.receiverUsername === user.username && 
-       message.receiverEmail === user.email)
-    )) {
-      // If it's a message from the current user, replace the temp message
-      if (message.senderUsername === user.username && message.senderEmail === user.email) {
-        setMessages(prev => 
-          prev.map(msg => 
-            // Find a temporary message with the same content and replace it with the server version
-            (msg.id.startsWith('temp-') && msg.content === message.content) 
-              ? message 
-              : msg
-          ).filter((msg, index, array) => {
-            // Remove any duplicates (same content, timestamp within 2 seconds)
-            if (!msg.id.startsWith('temp-')) return true;
-            const isDuplicate = array.some(m => 
-              !m.id.startsWith('temp-') && 
-              m.content === msg.content && 
-              Math.abs(parseInt(m.timestamp) - parseInt(msg.timestamp)) < 2000
-            );
-            return !isDuplicate;
-          })
-        );
-      } else {
-        // For messages from the other person, just add them
-        setMessages(prev => [...prev, message]);
-        scrollToBottom();
-      }
-    }
-  };
+  }
+};
+
   
-  const handleSend = () => {
-    if (!inputMessage.trim() || !selectedStudent || !wsReady) return;
-    
-    const messageContent = inputMessage.trim();
-    
-    // Create message object with temporary ID before server assigns one
-    const tempMessage = {
-      id: `temp-${Date.now()}`,
-      senderUsername: user.username,
-      senderEmail: user.email,
-      receiverUsername: selectedStudent.username,
-      receiverEmail: selectedStudent.email,
-      content: messageContent,
-      timestamp: new Date().getTime().toString()
-    };
-    
-    // Immediately add message to UI
-    setMessages(prev => [...prev, tempMessage]);
-      // Send message through WebSocket
-    wsRef.current.send(JSON.stringify({
-      type: 'message',
-      senderUsername: user.username,
-      senderEmail: user.email,
-      receiverUsername: selectedStudent.username,
-      receiverEmail: selectedStudent.email,
-      content: messageContent
-    }));
-    
-    setInputMessage("");
-    scrollToBottom();
-    
-    // Move this conversation to the top of the list
-    const currentStudent = students.find(s => 
-      s.username === selectedStudent.username && 
-      s.email === selectedStudent.email
-    );
-    if (currentStudent) {
-      console.log(`Moving ${selectedStudent.username} to top after sending message`);
-      setStudents([
-        currentStudent,
-        ...students.filter(s => 
-          s.username !== selectedStudent.username || 
-          s.email !== selectedStudent.email
-        )
-      ]);
-    }
-  };
+const handleSend = () => {
+  if (!inputMessage.trim() || !selectedStudent || !wsReady) return;
+
+  const messageContent = inputMessage.trim();
+
+  wsRef.current.send(JSON.stringify({
+    type: 'message',
+    senderUsername: user.username,
+    senderEmail: user.email,
+    receiverUsername: selectedStudent.username,
+    receiverEmail: selectedStudent.email,
+    content: messageContent
+  }));
+
+  setInputMessage("");
+  scrollToBottom();
+};
+
   
   // Send typing status
   const handleTyping = () => {
