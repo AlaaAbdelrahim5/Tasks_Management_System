@@ -130,10 +130,9 @@ const Chat = () => {  const { darkMode } = useContext(ThemeContext);
           `,
         }),
       });
-      
-      const data = await res.json();
+        const data = await res.json();
       const allUsers = data.data.getAllUsers || [];
-      const filtered = allUsers.filter((u) => u.username !== user.username);
+      const filtered = allUsers.filter((u) => !(u.username === user.username && u.email === user.email));
       setStudents(filtered);
       
       // Initialize unread messages count with composite keys
