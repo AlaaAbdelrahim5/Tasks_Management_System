@@ -9,6 +9,7 @@ const Chat = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [newMessageNotification, setNewMessageNotification] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState({});
+  const [latestMessageTimestamps, setLatestMessageTimestamps] = useState({}); // Add state for timestamps
   const [wsReady, setWsReady] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
@@ -46,7 +47,50 @@ const Chat = () => {
     };
   }, []);
 
-  // Set up WebSocket connection
+  // Set up WebSocket connection  // Function to fetch latest message timestamp for a user
+  const fetchLatestMessageTimestamp = async (otherUser) => {
+    try {
+      const res = await fetch("http://localhost:4000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            query GetMessages($senderUsername: String!, $senderEmail: String!, $receiverUsername: String!, $receiverEmail: String!) {
+              getMessages(senderUsername: $senderUsername, senderEmail: $senderEmail, receiverUsername: $receiverUsername, receiverEmail: $receiverEmail) {
+                timestamp
+              }
+            }
+          `,
+          variables: {
+            senderUsername: user.username,
+            senderEmail: user.email,
+            receiverUsername: otherUser.username,
+            receiverEmail: otherUser.email,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      const messagesData = data.data.getMessages || [];
+
+      if (messagesData.length > 0) {
+        // Sort messages by timestamp descending and get the latest one
+        messagesData.sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        const latestTimestamp = messagesData[0].timestamp;
+
+        // Update the state with this timestamp
+        setLatestMessageTimestamps((prev) => ({
+          ...prev,
+          [`${otherUser.username}-${otherUser.email}`]: latestTimestamp,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching latest message timestamp:", error);
+    }
+  };
+
   const setupWebSocket = () => {
     wsRef.current = new WebSocket("ws://localhost:4000");
 
@@ -146,10 +190,19 @@ const Chat = () => {
 
       // Initialize unread messages count with composite keys
       const unreadInit = {};
+      const timestampInit = {};
       filtered.forEach((u) => {
-        unreadInit[`${u.username}-${u.email}`] = 0;
+        const userKey = `${u.username}-${u.email}`;
+        unreadInit[userKey] = 0;
+        timestampInit[userKey] = null; // Initialize with null timestamp
       });
       setUnreadMessages(unreadInit);
+      setLatestMessageTimestamps(timestampInit);
+
+      // After setting the users, fetch the latest message timestamp for each one
+      filtered.forEach(async (u) => {
+        fetchLatestMessageTimestamp(u);
+      });
     } catch (err) {
       console.error("Failed to fetch users", err);
     }
@@ -200,7 +253,24 @@ const Chat = () => {
         }),
       });
       const data = await res.json();
-      setMessages(data.data.getMessages || []);
+      const messagesData = data.data.getMessages || [];
+      setMessages(messagesData);
+
+      // If there are messages, update the latest timestamp for this user
+      if (messagesData.length > 0) {
+        const userKey = `${selectedStudent.username}-${selectedStudent.email}`;
+        // Find the latest message by timestamp
+        const latestMessage = messagesData.reduce((latest, message) => {
+          return new Date(message.timestamp) > new Date(latest.timestamp)
+            ? message
+            : latest;
+        }, messagesData[0]);
+
+        setLatestMessageTimestamps((prev) => ({
+          ...prev,
+          [userKey]: latestMessage.timestamp,
+        }));
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -241,6 +311,18 @@ const Chat = () => {
 
       return [...filtered, message];
     });
+
+    // Update the timestamp for latest message from this user
+    const userKey =
+      message.senderUsername === user.username &&
+      message.senderEmail === user.email
+        ? `${message.receiverUsername}-${message.receiverEmail}`
+        : `${message.senderUsername}-${message.senderEmail}`;
+
+    setLatestMessageTimestamps((prev) => ({
+      ...prev,
+      [userKey]: message.timestamp,
+    }));
 
     scrollToBottom();
 
@@ -398,82 +480,120 @@ const Chat = () => {
             Users You Can Chat With
           </h2>
           <div className="space-y-2 overflow-y-auto flex-1 custom-scrollbar pr-1">
-            {students.map((user, i) => (
-              <div
-                key={i}
-                onClick={() =>
-                  setSelectedStudent({
-                    username: user.username,
-                    email: user.email,
-                  })
-                }
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                  selectedStudent &&
-                  selectedStudent.username === user.username &&
-                  selectedStudent.email === user.email
-                    ? darkMode
-                      ? "bg-blue-900/40 border-l-4 border-blue-500 shadow-md"
-                      : "bg-blue-50 border-l-4 border-blue-500 shadow-md"
-                    : darkMode
-                    ? "bg-gray-700 text-gray-200 hover:bg-gray-600 hover:translate-x-1"
-                    : "bg-gray-50 text-gray-800 hover:bg-gray-100 hover:translate-x-1 border border-gray-100"
-                }`}
-              >
+            {students
+              .slice() // Create a copy to avoid mutating the original array
+              .sort((a, b) => {
+                const keyA = `${a.username}-${a.email}`;
+                const keyB = `${b.username}-${b.email}`;
+                const timeA = latestMessageTimestamps[keyA]
+                  ? new Date(latestMessageTimestamps[keyA])
+                  : new Date(0);
+                const timeB = latestMessageTimestamps[keyB]
+                  ? new Date(latestMessageTimestamps[keyB])
+                  : new Date(0);
+                return timeB - timeA; // Sort in descending order (newest first)
+              })
+              .map((user, i) => (
                 <div
-                  className={`w-9 h-9 flex items-center justify-center rounded-full font-bold text-sm uppercase ${
-                    darkMode
-                      ? "bg-blue-600 text-white"
-                      : "bg-blue-100 text-blue-800"
-                  } relative`}
+                  key={i}
+                  onClick={() =>
+                    setSelectedStudent({
+                      username: user.username,
+                      email: user.email,
+                    })
+                  }
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                    selectedStudent &&
+                    selectedStudent.username === user.username &&
+                    selectedStudent.email === user.email
+                      ? darkMode
+                        ? "bg-blue-900/40 border-l-4 border-blue-500 shadow-md"
+                        : "bg-blue-50 border-l-4 border-blue-500 shadow-md"
+                      : darkMode
+                      ? "bg-gray-700 text-gray-200 hover:bg-gray-600 hover:translate-x-1"
+                      : "bg-gray-50 text-gray-800 hover:bg-gray-100 hover:translate-x-1 border border-gray-100"
+                  }`}
                 >
-                  {user.username.charAt(0)}
-                  {/* Unread message indicator - using composite key */}
-                  {unreadMessages[`${user.username}-${user.email}`] > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            
+                  <div
+                    className={`w-9 h-9 flex items-center justify-center rounded-full font-bold text-sm uppercase ${
+                      darkMode
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-100 text-blue-800"
+                    } relative`}
+                  >
+                    {user.username.charAt(0)}
+                    {/* Unread message indicator - using composite key */}
+                    {unreadMessages[`${user.username}-${user.email}`] > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"></span>
+                    )}
+                  </div>{" "}
+                  <div className="flex-1">
+                    <span className="font-medium">{user.username}</span>
+                    <span className="text-xs opacity-70 block">
+                      {user.email}
                     </span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <span className="font-medium">{user.username}</span>
-                  <span className="text-xs opacity-70 block">{user.email}</span>
-                  <span className="text-xs opacity-70 block">
-                    {user.isStudent ? "Student" : "Admin"}
-                  </span>
-                </div>
-                {selectedStudent &&
-                  selectedStudent.username === user.username &&
-                  selectedStudent.email === user.email && (
-                    <div className="ml-auto md:hidden">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation(); // Prevent triggering the parent onClick
-                          setSelectedStudent(null);
-                        }}
-                        className={`p-1 rounded-full ${
-                          darkMode
-                            ? "text-gray-400 hover:text-white"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                        aria-label="Close chat"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
+                    <span className="text-xs opacity-70 block">
+                      {user.isStudent ? "Student" : "Admin"}
+                    </span>{" "}
+                    <span className="text-xs opacity-70 block mt-1">
+                      {(() => {
+                        const key = `${user.username}-${user.email}`;
+                        const rawDate = latestMessageTimestamps[key];
+
+                        if (!rawDate) return "No activity yet";
+
+                        const date = new Date(rawDate);
+                        if (isNaN(date.getTime())) return "Invalid timestamp";
+
+                        return (
+                          <span title={date.toISOString()}>
+                            {date.toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                            ,{" "}
+                            {date.toLocaleTimeString(undefined, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        );
+                      })()}
+                    </span>
+                  </div>
+                  {selectedStudent &&
+                    selectedStudent.username === user.username &&
+                    selectedStudent.email === user.email && (
+                      <div className="ml-auto md:hidden">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering the parent onClick
+                            setSelectedStudent(null);
+                          }}
+                          className={`p-1 rounded-full ${
+                            darkMode
+                              ? "text-gray-400 hover:text-white"
+                              : "text-gray-500 hover:text-gray-700"
+                          }`}
+                          aria-label="Close chat"
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-              </div>
-            ))}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                </div>
+              ))}
           </div>
         </div>
 
@@ -654,14 +774,19 @@ const Chat = () => {
                       }`}
                     ></div>
                     <div className="flex flex-col">
-                      <div className="break-words">{msg.content}</div>
+                      <div className="break-words">{msg.content}</div>{" "}
                       <span className="text-xs opacity-70 mt-1 text-right">
                         {msg.timestamp && !isNaN(new Date(msg.timestamp))
-                          ? new Date(msg.timestamp).toLocaleTimeString([], {
+                          ? new Date(msg.timestamp).toLocaleDateString([], {
+                              month: "short",
+                              day: "numeric",
+                            }) +
+                            " " +
+                            new Date(msg.timestamp).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })
-                          : "Invalid time"} 
+                          : "Invalid time"}
                       </span>
                     </div>
                   </div>
@@ -710,7 +835,9 @@ const Chat = () => {
           )}
 
           {/* Message input - fixed at bottom */}
-          <div className="flex flex-col border-t">
+          <div className={`flex flex-col border-t-2 ${
+                darkMode ? "border-gray-700" : "border-blue-200"
+              }`}>
             <div
               className={`flex items-center p-4 ${
                 darkMode
