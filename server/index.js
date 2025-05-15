@@ -86,7 +86,6 @@ const startServer = async () => {
             console.log(`User identified as: ${userId} (${userEmail})`);
             break;
           case "message":
-            // Save message to database
             if (
               data.senderUsername &&
               data.senderEmail &&
@@ -95,46 +94,48 @@ const startServer = async () => {
               data.content
             ) {
               try {
-                // First, immediately broadcast to reduce perceived latency
-                const tempMessageId = `temp-${Date.now()}`;
-                const tempTimestamp = Date.now().toString();
-                // Create temporary message object
-                const tempMessageObj = {
-                  type: "message",
-                  message: {
-                    id: tempMessageId,
-                    senderUsername: data.senderUsername,
-                    senderEmail: data.senderEmail,
-                    receiverUsername: data.receiverUsername,
-                    receiverEmail: data.receiverEmail,
-                    content: data.content,
-                    timestamp: tempTimestamp,
-                  },
-                }; // Send to all sender's connections
-                const senderIdentifier = createUserIdentifier(
-                  data.senderUsername,
-                  data.senderEmail
-                );
-                if (userConnections.has(senderIdentifier)) {
-                  userConnections.get(senderIdentifier).forEach((conn) => {
-                    if (conn.readyState === WebSocket.OPEN) {
-                      conn.send(JSON.stringify(tempMessageObj));
-                    }
-                  });
-                }
-                // Send to all receiver's connections
+                // Immediately broadcast temp message
+                // const tempMessageObj = {
+                //   type: "message",
+                //   message: {
+                //     id: `temp-${Date.now()}`,
+                //     senderUsername: data.senderUsername,
+                //     senderEmail: data.senderEmail,
+                //     receiverUsername: data.receiverUsername,
+                //     receiverEmail: data.receiverEmail,
+                //     content: data.content,
+                //     timestamp: Date.now().toString(),
+                //   },
+                // };
+
+                // const senderIdentifier = createUserIdentifier(
+                //   data.senderUsername,
+                //   data.senderEmail
+                // );
                 const receiverIdentifier = createUserIdentifier(
                   data.receiverUsername,
                   data.receiverEmail
                 );
-                if (userConnections.has(receiverIdentifier)) {
-                  userConnections.get(receiverIdentifier).forEach((conn) => {
-                    if (conn.readyState === WebSocket.OPEN) {
-                      conn.send(JSON.stringify(tempMessageObj));
-                    }
-                  });
-                }
-                // Then save to database for persistence
+
+                // Broadcast temporary message to sender
+                // if (userConnections.has(senderIdentifier)) {
+                //   userConnections.get(senderIdentifier).forEach((conn) => {
+                //     if (conn.readyState === WebSocket.OPEN) {
+                //       conn.send(JSON.stringify(tempMessageObj));
+                //     }
+                //   });
+                // }
+
+                // // Broadcast temporary message to receiver
+                // if (userConnections.has(receiverIdentifier)) {
+                //   userConnections.get(receiverIdentifier).forEach((conn) => {
+                //     if (conn.readyState === WebSocket.OPEN) {
+                //       conn.send(JSON.stringify(tempMessageObj));
+                //     }
+                //   });
+                // }
+
+                // Save message to DB
                 const newMessage = new Message({
                   senderUsername: data.senderUsername,
                   senderEmail: data.senderEmail,
@@ -158,7 +159,6 @@ const startServer = async () => {
                   },
                 };
 
-                // Recompute identifiers here
                 const updatedSenderId = createUserIdentifier(
                   savedMessage.senderUsername,
                   savedMessage.senderEmail
@@ -168,7 +168,7 @@ const startServer = async () => {
                   savedMessage.receiverEmail
                 );
 
-                // Notify sender
+                // Broadcast saved message to sender
                 if (userConnections.has(updatedSenderId)) {
                   userConnections.get(updatedSenderId).forEach((conn) => {
                     if (conn.readyState === WebSocket.OPEN) {
@@ -177,7 +177,7 @@ const startServer = async () => {
                   });
                 }
 
-                // Notify receiver
+                // Broadcast saved message to receiver
                 if (userConnections.has(updatedReceiverId)) {
                   userConnections.get(updatedReceiverId).forEach((conn) => {
                     if (conn.readyState === WebSocket.OPEN) {
@@ -186,24 +186,15 @@ const startServer = async () => {
                   });
                 }
 
-                // Update all receiver's connections with the official ID and timestamp
-                // Reuse the existing receiverIdentifier variable
-                if (userConnections.has(receiverIdentifier)) {
-                  userConnections.get(receiverIdentifier).forEach((conn) => {
-                    if (conn.readyState === WebSocket.OPEN) {
-                      conn.send(JSON.stringify(persistentMessageObj));
-                    }
-                  });
-                }
-
                 console.log(
-                  `Message sent from ${data.senderUsername} (${data.senderEmail}) to ${data.receiverUsername} (${data.receiverEmail}): "${data.content}"`
+                  `Message sent from ${data.senderUsername} to ${data.receiverUsername}: "${data.content}"`
                 );
               } catch (error) {
                 console.error("Error handling message:", error);
               }
             }
             break;
+
           case "typing":
             // Forward typing status to all recipient's connections
             const receiverIdentifier = createUserIdentifier(

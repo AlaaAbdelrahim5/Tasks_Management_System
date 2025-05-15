@@ -210,27 +210,30 @@ const Chat = () => {  const { darkMode } = useContext(ThemeContext);
   
   // Handle incoming WebSocket messages
 const handleIncomingMessage = (message) => {
-  // Append the message
   setMessages(prev => {
-    const combined = [...prev, message];
+    const isReal = !message.id.startsWith('temp-');
+    const timeWindow = 3000;
+    const msgTime = new Date(message.timestamp).getTime();
 
-    // Deduplicate by ID
-    const unique = [];
-    const seen = new Set();
-
-    for (let msg of combined) {
-      if (!seen.has(msg.id)) {
-        seen.add(msg.id);
-        unique.push(msg);
+    // Remove matching temp messages if real version comes in
+    const filtered = prev.filter(m => {
+      if (m.id.startsWith('temp-') && isReal) {
+        const mTime = new Date(m.timestamp).getTime();
+        return !(m.content === message.content &&
+                 m.senderUsername === message.senderUsername &&
+                 m.receiverUsername === message.receiverUsername &&
+                 Math.abs(mTime - msgTime) < timeWindow);
       }
-    }
+      // Remove exact duplicates by ID
+      return m.id !== message.id;
+    });
 
-    return unique;
+    return [...filtered, message];
   });
 
   scrollToBottom();
 
-  // If it's from someone else and not the current chat
+  // Notify only if it's from someone else
   if (
     message.senderUsername !== user.username ||
     message.senderEmail !== user.email
@@ -257,12 +260,14 @@ const handleIncomingMessage = (message) => {
   }
 };
 
+
   
 const handleSend = () => {
   if (!inputMessage.trim() || !selectedStudent || !wsReady) return;
 
   const messageContent = inputMessage.trim();
 
+  // Only send via WebSocket (do not add to UI yourself)
   wsRef.current.send(JSON.stringify({
     type: 'message',
     senderUsername: user.username,
@@ -275,6 +280,7 @@ const handleSend = () => {
   setInputMessage("");
   scrollToBottom();
 };
+
 
   
   // Send typing status
@@ -547,7 +553,7 @@ const handleSend = () => {
                     <div className="flex flex-col">
                       <div className="break-words">{msg.content}</div>
                       <span className="text-xs opacity-70 mt-1 text-right">
-                        {new Date(parseInt(msg.timestamp)).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
                     </div>
                   </div>
