@@ -12,20 +12,48 @@ module.exports = {
     getTasks: async () => await Task.find(),
     getStudentTasks: async (_, { username }) => {
       return await Task.find({ assignedStudent: username });
-    },    getMessages: async (_, { senderUsername, senderEmail, receiverUsername, receiverEmail }) => {
-      return await Message.find({
+    },
+    getMessages: async (
+      _,
+      { senderUsername, senderEmail, receiverUsername, receiverEmail }
+    ) => {
+      const messages = await Message.find({
         $or: [
           { senderUsername, senderEmail, receiverUsername, receiverEmail },
-          { senderUsername: receiverUsername, senderEmail: receiverEmail, receiverUsername: senderUsername, receiverEmail: senderEmail },
+          {
+            senderUsername: receiverUsername,
+            senderEmail: receiverEmail,
+            receiverUsername: senderUsername,
+            receiverEmail: senderEmail,
+          },
         ],
       }).sort({ timestamp: 1 });
+
+      // Format timestamps as ISO strings
+      return messages.map((msg) => ({
+        id: msg._id,
+        senderUsername: msg.senderUsername,
+        senderEmail: msg.senderEmail,
+        receiverUsername: msg.receiverUsername,
+        receiverEmail: msg.receiverEmail,
+        content: msg.content,
+        timestamp: msg.timestamp.toISOString(),
+      }));
     },
-    getLatestMessageCount: async (_, { senderUsername, senderEmail, receiverUsername, receiverEmail }) => {
+    getLatestMessageCount: async (
+      _,
+      { senderUsername, senderEmail, receiverUsername, receiverEmail }
+    ) => {
       // Count all messages between the two users
       const count = await Message.countDocuments({
         $or: [
           { senderUsername, senderEmail, receiverUsername, receiverEmail },
-          { senderUsername: receiverUsername, senderEmail: receiverEmail, receiverUsername: senderUsername, receiverEmail: senderEmail },
+          {
+            senderUsername: receiverUsername,
+            senderEmail: receiverEmail,
+            receiverUsername: senderUsername,
+            receiverEmail: senderEmail,
+          },
         ],
       });
       return count;
@@ -39,9 +67,13 @@ module.exports = {
     },
 
     updateTask: async (_, { id, taskInput }) => {
-      const updatedTask = await Task.findOneAndUpdate({ id: Number(id) }, taskInput, {
-        new: true,
-      });
+      const updatedTask = await Task.findOneAndUpdate(
+        { id: Number(id) },
+        taskInput,
+        {
+          new: true,
+        }
+      );
       if (!updatedTask) throw new Error("Task not found");
       return updatedTask;
     },
@@ -104,15 +136,14 @@ module.exports = {
     },
 
     addProject: async (_, { projectInput }) => {
-  const existing = await Project.findOne({ title: projectInput.title });
-  if (existing) {
-    throw new Error("Project title already exists");
-  }
+      const existing = await Project.findOne({ title: projectInput.title });
+      if (existing) {
+        throw new Error("Project title already exists");
+      }
 
-  const project = new Project(projectInput);
-  return await project.save();
-},
-
+      const project = new Project(projectInput);
+      return await project.save();
+    },
 
     deleteProject: async (_, { id }) => {
       const project = await Project.findOne({ id: Number(id) });
@@ -122,13 +153,17 @@ module.exports = {
       await Project.findOneAndDelete({ id: Number(id) });
 
       return "Project and related tasks deleted.";
-    },    sendMessage: async (_, { senderUsername, senderEmail, receiverUsername, receiverEmail, content }) => {
-      const message = new Message({ 
-        senderUsername, 
-        senderEmail, 
-        receiverUsername, 
-        receiverEmail, 
-        content 
+    },
+    sendMessage: async (
+      _,
+      { senderUsername, senderEmail, receiverUsername, receiverEmail, content }
+    ) => {
+      const message = new Message({
+        senderUsername,
+        senderEmail,
+        receiverUsername,
+        receiverEmail,
+        content,
       });
       return await message.save();
     },
