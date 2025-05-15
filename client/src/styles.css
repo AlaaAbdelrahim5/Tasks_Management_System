@@ -23,6 +23,27 @@
     --scrollbar-hover: #94a3b8;
 }
 
+/* Notification animation */
+@keyframes notificationAppear {
+    0% { opacity: 0; transform: translateY(-20px) scale(0.9); }
+    40% { opacity: 1; transform: translateY(0) scale(1.05); }
+    60% { transform: translateY(-7px) scale(1.02); }
+    80% { transform: translateY(0) scale(1); }
+    90% { transform: translateY(-3px); }
+    100% { transform: translateY(0); }
+}
+
+.animate-bounce-once {
+    animation: notificationAppear 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Notification pulse effect */
+@keyframes gentle-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
 /* Scrollbar Styling */
 .custom-scrollbar::-webkit-scrollbar {
     width: 8px;

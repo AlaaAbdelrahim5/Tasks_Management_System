@@ -23,13 +23,13 @@ const Chat = () => {
   const typingTimeoutRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
 
-  // new: Track current chat via ref to avoid stale closures
-  const selectedChatEmailRef = useRef(null); // new
+  // Track current chat via ref to avoid stale closures
+  const selectedChatEmailRef = useRef(null);
 
-  // new: Sync ref when chat selection changes
+  // Sync ref when chat selection changes
   useEffect(() => {
-    selectedChatEmailRef.current = selectedStudent?.email || null; // new
-  }, [selectedStudent]); // new
+    selectedChatEmailRef.current = selectedStudent?.email || null;
+  }, [selectedStudent]);
 
   // Handle window resize
   useEffect(() => {
@@ -90,17 +90,17 @@ const Chat = () => {
     };
   }, []);
 
-  // new: Re-bind WS listener on chat change (ensures fresh selectedStudent)
-  useEffect(() => { // new
-    if (!wsRef.current) return; // new
-    const ws = wsRef.current; // new
-    const listener = (evt) => { // new
-      const data = JSON.parse(evt.data); // new
-      if (data.type === "message") handleIncomingMessage(data.message); // new
-    }; // new
-    ws.addEventListener("message", listener); // new
-    return () => ws.removeEventListener("message", listener); // new
-  }, [selectedStudent, students]); // new
+  // Re-bind WS listener on chat change (ensures fresh selectedStudent)
+  useEffect(() => {
+    if (!wsRef.current) return; 
+    const ws = wsRef.current; 
+    const listener = (evt) => { 
+      const data = JSON.parse(evt.data); 
+      if (data.type === "message") handleIncomingMessage(data.message); 
+    }; 
+    ws.addEventListener("message", listener); 
+    return () => ws.removeEventListener("message", listener); 
+  }, [selectedStudent, students]); 
 
   // Set up WebSocket connection  // Function to fetch latest message timestamp for a user
   const fetchLatestMessageTimestamp = async (otherUser) => {
@@ -594,32 +594,79 @@ const Chat = () => {
     audio.play().catch((e) => console.log("Audio play failed:", e));
   }; // Handle incoming WebSocket messages
 
-    // Incoming message handler using selectedChatEmailRef (new)
-const handleIncomingMessage = (message) => { // new
+    // Incoming message handler using selectedChatEmailRef
+const handleIncomingMessage = (message) => {
     const otherEmail =
-      message.senderEmail === user.email ? message.receiverEmail : message.senderEmail; // new
+      message.senderEmail === user.email ? message.receiverEmail : message.senderEmail;
 
     // Update sidebar timestamp
     setLatestMessageTimestamps(prev => ({ ...prev, [otherEmail]: message.timestamp }));
 
     // Bump unread if not current chat
-    if (message.senderEmail !== user.email && selectedChatEmailRef.current !== otherEmail) { // new
-      setUnreadMessages(u => ({ ...u, [otherEmail]: (u[otherEmail] || 0) + 1 })); // new
-      playNotificationSound(); // new
+    if (message.senderEmail !== user.email && selectedChatEmailRef.current !== otherEmail) {
+      setUnreadMessages(u => ({ ...u, [otherEmail]: (u[otherEmail] || 0) + 1 }));
+      playNotificationSound();
+      
+      // Find the sender in the students list to get their username
+      const sender = students.find(s => s.email === message.senderEmail);
+      if (sender) {
+        // Show notification with the sender's name and message content
+        showNotification(sender.username, message.content);
+      }
     }
 
     // If message is for current chat, append immediately with dedupe of temp
-    if (selectedChatEmailRef.current === otherEmail) { // new
+    if (selectedChatEmailRef.current === otherEmail) {
       setMessages(prev => {
         // remove any temp message matching content
-        const cleaned = prev.filter(m => !(m.id.startsWith("temp-") && m.content === message.content)); // new: dedupe temp
+        const cleaned = prev.filter(m => !(m.id.startsWith("temp-") && m.content === message.content));
         // remove any existing same-id message
-        const withoutDup = cleaned.filter(m => m.id !== message.id); // new
-        return [...withoutDup, message]; // new
-      }); // new
-      scrollToBottom(); // new
+        const withoutDup = cleaned.filter(m => m.id !== message.id);
+        return [...withoutDup, message]; 
+      });
+      scrollToBottom();
     }
-  }; // new
+  };
+
+  // Handle the notification click to switch to conversation
+  const handleNotificationClick = (email) => {
+    // Find the student with this email
+    const student = students.find(s => s.email === email);
+    if (student) {
+      // Select this student to open the conversation
+      setSelectedStudent({
+        username: student.username,
+        email: student.email,
+      });
+      // Clear the notification
+      setNewMessageNotification(null);
+      // Reset unread count
+      setUnreadMessages(prev => ({
+        ...prev,
+        [email]: 0
+      }));
+    }
+  };
+
+  // Show a notification with proper message preview
+  const showNotification = (sender, message, unreadCount = 1) => {
+    // Truncate message if it's too long
+    const preview = message.length > 50 ? message.substring(0, 47) + '...' : message;
+    
+    // Set notification state
+    setNewMessageNotification({
+      sender,
+      preview,
+      timestamp: new Date(),
+      unreadCount,
+      senderEmail: students.find(s => s.username === sender)?.email || ''
+    });
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      setNewMessageNotification(null);
+    }, 5000);
+  };
 
   const handleSend = () => {
     if (!inputMessage.trim() || !selectedStudent) return;
@@ -726,60 +773,42 @@ const handleIncomingMessage = (message) => { // new
     }
   };
 
-  // Handle the notification click to switch to conversation
-  const handleNotificationClick = (email) => {
-    // Find the student in our list
-    const sender = students.find((s) => s.email === email);
+  // WebSocket connection status
+  const renderConnectionStatus = () => {
+    if (wsReady) return null;
 
-    if (sender) {
-      console.log(
-        `Switching to conversation with ${sender.username} via notification click`
-      );
-      setSelectedStudent({
-        username: sender.username,
-        email: sender.email,
-      });
+    return (
+      <div
+        className={`px-4 py-2 text-xs flex items-center justify-between ${
+          darkMode
+            ? "bg-gray-800 text-amber-300"
+            : "bg-gray-100 text-amber-600"
+        } border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+      >
+        <div className="flex items-center">
+          <span className="mr-2">
+            {isReconnecting
+              ? `Reconnecting to chat server (Attempt ${reconnectAttempts})...`
+              : "Connection to chat server lost"}
+          </span>
+          <span className="animate-spin h-3 w-3 text-amber-500">⟳</span>
+        </div>
 
-      // Clear the notification
-      setNewMessageNotification(null);
-
-      // Reset unread count for this conversation
-      setUnreadMessages((prev) => ({
-        ...prev,
-        [sender.email]: 0,
-      }));
-
-      // This will trigger fetchMessages via the useEffect
-    }
-  };
-
-  // Show a notification with proper message preview
-  const showNotification = (sender, message, unreadCount = 1) => {
-    // Format the message content for preview
-    const messagePreview =
-      message.content?.length > 30
-        ? `${message.content.substring(0, 30)}...`
-        : message.content;
-
-    // Create notification object
-    const notification = {
-      from: sender?.username || message.senderEmail,
-      email: message.senderEmail,
-      content: messagePreview,
-      count: unreadCount,
-      time: new Date().toLocaleTimeString(),
-    };
-
-    // Set the notification in state
-    setNewMessageNotification(notification);
-
-    // Auto-dismiss after a delay (giving user time to notice and click)
-    setTimeout(() => {
-      setNewMessageNotification((prev) =>
-        // Only clear if it's the same notification (prevent clearing newer ones)
-        prev?.email === notification.email ? null : prev
-      );
-    }, 7000);
+        <button
+          onClick={() => {
+            console.log("Manual reconnection attempt");
+            setupWebSocket();
+          }}
+          className={`px-2 py-1 rounded text-xs ${
+            darkMode
+              ? "bg-amber-600 hover:bg-amber-500 text-white"
+              : "bg-amber-500 hover:bg-amber-400 text-white"
+          } transition-colors`}
+        >
+          Reconnect Now
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -791,48 +820,6 @@ const handleIncomingMessage = (message) => { // new
       {/* Chat container with fixed height */}
       <div className="flex flex-col md:flex-row flex-1 p-4 md:p-6 gap-4 md:gap-6 overflow-hidden">
         {/* New message notification */}{" "}
-        {newMessageNotification && (
-          <div
-            className={`fixed top-24 right-4 p-4 rounded-lg shadow-lg z-50 animate-bounce cursor-pointer
-            ${darkMode ? "bg-blue-900 text-white" : "bg-blue-500 text-white"}`}
-            onClick={() =>
-              handleNotificationClick(newMessageNotification.email)
-            }
-          >
-            <div className="flex items-center">
-              <div className="mr-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-              </div>
-              <div>
-                <p className="font-medium">
-                  New message{newMessageNotification.count > 1 ? "s" : ""}
-                </p>{" "}
-                <p className="text-sm opacity-90">
-                  From {newMessageNotification.from}
-                  {newMessageNotification.count > 1
-                    ? ` (${newMessageNotification.count})`
-                    : ""}
-                </p>
-                {newMessageNotification.content && (
-                  <p className="text-xs mt-1 opacity-90 font-light italic">
-                    "{newMessageNotification.content}"
-                  </p>
-                )}
-                <p className="text-xs mt-1 opacity-80 font-medium">
-                  Click to view
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
         {/* Users sidebar - fixed height with scrolling */}
         <div
           className={`w-full md:w-72 p-4 rounded-lg shadow-lg flex flex-col h-full ${
@@ -1215,38 +1202,7 @@ const handleIncomingMessage = (message) => { // new
           )}
 
           {/* WebSocket connection status */}
-          {!wsReady && selectedStudent && (
-            <div
-              className={`px-4 py-2 text-xs flex items-center justify-between ${
-                darkMode
-                  ? "bg-gray-800 text-amber-300"
-                  : "bg-gray-100 text-amber-600"
-              } border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
-            >
-              <div className="flex items-center">
-                <span className="mr-2">
-                  {isReconnecting
-                    ? `Reconnecting to chat server (Attempt ${reconnectAttempts})...`
-                    : "Connection to chat server lost"}
-                </span>
-                <span className="animate-spin h-3 w-3 text-amber-500">⟳</span>
-              </div>
-
-              <button
-                onClick={() => {
-                  console.log("Manual reconnection attempt");
-                  setupWebSocket();
-                }}
-                className={`px-2 py-1 rounded text-xs ${
-                  darkMode
-                    ? "bg-amber-600 hover:bg-amber-500 text-white"
-                    : "bg-amber-500 hover:bg-amber-400 text-white"
-                } transition-colors`}
-              >
-                Reconnect Now
-              </button>
-            </div>
-          )}
+          {!wsReady && selectedStudent && renderConnectionStatus()}
 
           {/* Message input - fixed at bottom */}
           <div
@@ -1312,9 +1268,62 @@ const handleIncomingMessage = (message) => { // new
                 Send
               </button>
             </div>
+          </div>        </div>
+      </div>      {/* New message notification popup */}
+      {newMessageNotification && (
+        <div 
+          onClick={() => handleNotificationClick(newMessageNotification.senderEmail)}
+          className={`fixed top-20 right-5 p-4 rounded-lg shadow-lg cursor-pointer transform transition-all duration-300 animate-bounce-once ${
+            darkMode 
+              ? 'bg-gray-800 text-white border border-blue-600 shadow-blue-600/20' 
+              : 'bg-white text-gray-800 border border-blue-300 shadow-blue-300/20'
+          } max-w-xs hover:scale-105 transition-transform`}
+          style={{
+            zIndex: 1000,
+            animation: `notificationAppear 1s cubic-bezier(0.22, 1, 0.36, 1) forwards, gentle-pulse 2s infinite`
+          }}
+        >
+          <div className="flex items-start">
+            <div className={`relative w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+              darkMode ? 'bg-blue-600' : 'bg-blue-100'
+            }`}>
+              {/* Notification icon */}
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${darkMode ? 'text-white' : 'text-blue-600'}`} viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+              </svg>
+              
+              {/* Small dot indicating new message */}
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center animate-pulse">
+                !              </span>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center mb-1">
+                <p className="font-bold">{newMessageNotification.sender}</p>
+                <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                  darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'
+                }`}>
+                  New message
+                </span>
+              </div>
+              <p className="text-sm opacity-80">{newMessageNotification.preview}</p>
+              <p className="text-xs mt-1 opacity-70">
+                {new Date(newMessageNotification.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              </p>
+            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setNewMessageNotification(null);
+              }}
+              className={`ml-3 p-1 rounded-full ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
