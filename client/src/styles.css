@@ -237,11 +237,19 @@ body {
     line-height: 1.5;
     word-break: break-word;
     hyphens: auto;
+    text-align: center;
+    margin: 0 auto;
 }
 
 /* Table column widths */
 .tasks-table {
     table-layout: fixed;
+}
+
+.tasks-table th, 
+.tasks-table td {
+    text-align: center;
+    vertical-align: middle;
 }
 
 .tasks-table th:nth-child(1), /* Task ID */
