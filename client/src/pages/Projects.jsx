@@ -529,24 +529,26 @@ const Projects = () => {
             </button>
           </div>
         )}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="relative">
               <h1
-                className={`text-3xl font-bold mb-2 ${
-                  darkMode ? "text-white" : "text-gray-800"
+                className={`text-4xl sm:text-5xl font-extrabold mb-2 bg-clip-text text-transparent ${
+                  darkMode
+                    ? "bg-gradient-to-r from-blue-400 to-indigo-500"
+                    : "bg-gradient-to-r from-blue-600 to-cyan-400"
                 }`}
               >
                 {isStudent ? "Your Projects" : "Projects Overview"}
               </h1>
               <p
-                className={`text-sm ${
+                className={`text-s ${
                   darkMode ? "text-gray-400" : "text-gray-600"
                 }`}
               >
                 Manage and track your project portfolio
               </p>
-              <div className="w-20 h-1 mt-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+              <div className="w-65 h-1 mt-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
             </div>{" "}
             <div className="flex items-center gap-3">
               <div
@@ -571,7 +573,6 @@ const Projects = () => {
               </div>
             </div>
           </div>
-          <div className="w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full mt-4 opacity-30"></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="flex flex-col md:flex-row gap-2">
@@ -756,6 +757,7 @@ const Projects = () => {
             </div>
           </div>
         </div>{" "}
+        <div className="w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full mt-4 opacity-30"></div>
         {showForm && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-transparent bg-opacity-30 backdrop-blur-sm p-4">
             <div className="w-full max-w-lg p-1.5 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-2xl animate-fade-in">
