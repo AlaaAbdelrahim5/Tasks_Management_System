@@ -20,7 +20,7 @@ const DashboardChart = ({ projectCount, studentCount, taskCount, finishedProject
         // Define colors based on theme
         const textColor = darkMode ? '#e2e8f0' : '#333';
         const gridColor = darkMode ? 'rgba(100, 100, 100, 0.2)' : 'rgba(200, 200, 200, 0.2)';
-        const tooltipBgColor = darkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(0, 0, 0, 0.8)';
+        const tooltipBgColor = darkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.92)';
 
         // Define labels and data based on user type
         let labels = [];
@@ -32,9 +32,9 @@ const DashboardChart = ({ projectCount, studentCount, taskCount, finishedProject
         labels.push('Number of Projects', 'Number of Tasks', 'Number of Finished Projects');
         data.push(projectCount, taskCount, finishedProjectCount);
         backgroundColor.push(
-          darkMode ? 'rgba(100, 149, 237, 0.7)' : 'rgba(54, 162, 235, 0.7)',
-          darkMode ? 'rgba(255, 193, 102, 0.7)' : 'rgba(255, 159, 64, 0.7)',
-          darkMode ? 'rgba(102, 204, 204, 0.7)' : 'rgba(75, 192, 192, 0.7)'
+          darkMode ? 'rgba(100, 149, 237, 0.85)' : 'rgba(54, 162, 235, 0.85)',
+          darkMode ? 'rgba(255, 193, 102, 0.85)' : 'rgba(255, 159, 64, 0.85)',
+          darkMode ? 'rgba(102, 204, 204, 0.85)' : 'rgba(75, 192, 192, 0.85)'
         );
         borderColor.push(
           darkMode ? 'rgba(100, 149, 237, 1)' : 'rgba(54, 162, 235, 1)',
@@ -46,7 +46,7 @@ const DashboardChart = ({ projectCount, studentCount, taskCount, finishedProject
         if (!isStudent) {
           labels.splice(1, 0, 'Number of Students');
           data.splice(1, 0, studentCount);
-          backgroundColor.splice(1, 0, darkMode ? 'rgba(255, 138, 161, 0.7)' : 'rgba(255, 99, 132, 0.7)');
+          backgroundColor.splice(1, 0, darkMode ? 'rgba(255, 138, 161, 0.85)' : 'rgba(255, 99, 132, 0.85)');
           borderColor.splice(1, 0, darkMode ? 'rgba(255, 138, 161, 1)' : 'rgba(255, 99, 132, 1)');
         }
 
@@ -60,25 +60,41 @@ const DashboardChart = ({ projectCount, studentCount, taskCount, finishedProject
               data: data,
               backgroundColor: backgroundColor,
               borderColor: borderColor,
-              borderWidth: 2,
-              borderRadius: 6,
-              maxBarThickness: 80
+              borderWidth: 3,
+              borderRadius: 12,
+              maxBarThickness: 60,
+              hoverBackgroundColor: backgroundColor.map(c => c.replace('0.85', '1')),
+              hoverBorderColor: borderColor,
+              barPercentage: 0.7,
+              categoryPercentage: 0.6,
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+              padding: {
+                top: 30,
+                left: 20,
+                right: 20,
+                bottom: 10
+              }
+            },
             scales: {
               y: { 
                 beginAtZero: true,
                 grid: {
-                  color: gridColor
+                  color: gridColor,
+                  borderDash: [6, 4],
+                  drawBorder: false,
                 },
                 ticks: {
                   color: textColor,
                   font: {
-                    weight: 'bold'
-                  }
+                    weight: 'bold',
+                    size: 14,
+                  },
+                  padding: 8,
                 }
               },
               x: {
@@ -88,8 +104,10 @@ const DashboardChart = ({ projectCount, studentCount, taskCount, finishedProject
                 ticks: {
                   color: textColor,
                   font: {
-                    weight: 'bold'
-                  }
+                    weight: 'bold',
+                    size: 14,
+                  },
+                  padding: 8,
                 }
               }
             },
@@ -99,36 +117,53 @@ const DashboardChart = ({ projectCount, studentCount, taskCount, finishedProject
                 labels: {
                   color: textColor,
                   font: {
-                    weight: 'bold'
-                  }
+                    weight: 'bold',
+                    size: 15,
+                  },
+                  boxWidth: 18,
+                  boxHeight: 18,
+                  padding: 18,
+                  usePointStyle: true,
                 }
               },
               title: {
                 display: true,
                 text: isStudent ? 'Student Dashboard Overview' : 'Admin Dashboard Overview',
                 font: {
-                  size: 18,
-                  weight: 'bold'
+                  size: 22,
+                  weight: 'bold',
+                  family: 'Segoe UI, Arial, sans-serif'
                 },
                 padding: {
                   top: 10,
-                  bottom: 20
+                  bottom: 30
                 },
                 color: textColor
               },
               tooltip: {
                 backgroundColor: tooltipBgColor,
-                padding: 12,
+                padding: 14,
+                borderColor: darkMode ? '#64748b' : '#e2e8f0',
+                borderWidth: 2,
                 titleFont: {
-                  weight: 'bold'
+                  weight: 'bold',
+                  size: 16,
+                  family: 'Segoe UI, Arial, sans-serif'
+                },
+                bodyFont: {
+                  size: 15,
+                  family: 'Segoe UI, Arial, sans-serif'
                 },
                 bodyColor: '#fff',
-                titleColor: '#fff'
+                titleColor: '#fff',
+                cornerRadius: 8,
+                caretSize: 8,
+                displayColors: false,
               }
             },
             animation: {
-              duration: 1500,
-              easing: 'easeInOutQuad'
+              duration: 1200,
+              easing: 'easeOutQuart'
             }
           }
         });
@@ -154,13 +189,23 @@ const DashboardChart = ({ projectCount, studentCount, taskCount, finishedProject
   }, [projectCount, studentCount, taskCount, finishedProjectCount, isStudent, darkMode]);
 
   return (
-    <div className={`p-6 rounded-lg shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`} style={{ 
-      height: '450px',
-      background: darkMode 
-        ? 'linear-gradient(to bottom right, #1e293b, #0f172a)' 
-        : 'linear-gradient(to bottom right, #ffffff, #f7f9fc)'
-    }}>
-      <canvas id="overviewChart" ref={chartRef}></canvas>
+    <div
+      className={`p-8 rounded-2xl shadow-2xl transition-colors duration-300 border ${
+        darkMode
+          ? 'bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 border-blue-500'
+          : 'bg-gradient-to-br from-white via-slate-100 to-slate-200 border-blue-400'
+      }`}
+      style={{
+        height: '480px',
+        minWidth: '340px',
+        boxShadow: darkMode
+          ? '0 8px 32px 0 rgba(30,41,59,0.45)'
+          : '0 8px 32px 0 rgba(100,116,139,0.12)',
+        transition: 'background 0.3s, box-shadow 0.3s',
+        position: 'relative',
+      }}
+    >
+      <canvas id="overviewChart" ref={chartRef} />
     </div>
   );
 };

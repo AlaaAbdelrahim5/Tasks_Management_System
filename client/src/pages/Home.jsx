@@ -31,10 +31,10 @@ const Home = () => {
     const user = JSON.parse(localStorage.getItem("user")) || {};
     const currentUser = user.username || "";
     const student = user.isStudent || false;
-  
+
     setIsStudent(student);
     setUsername(currentUser);
-  
+
     try {
       const res = await fetch("http://localhost:4000/graphql", {
         method: "POST",
@@ -49,29 +49,29 @@ const Home = () => {
           `,
         }),
       });
-  
+
       const { data } = await res.json();
-  
+
       if (student) {
-        const myProjects = data.getProjects.filter(p =>
+        const myProjects = data.getProjects.filter((p) =>
           p.students?.includes(currentUser)
         );
-        const myTasks = data.getTasks.filter(t =>
-          t.assignedStudent === currentUser
+        const myTasks = data.getTasks.filter(
+          (t) => t.assignedStudent === currentUser
         );
-        const myFinishedProjects = myProjects.filter(p =>
+        const myFinishedProjects = myProjects.filter((p) =>
           ["finished", "completed"].includes(p.status.toLowerCase())
         );
-  
+
         setProjectCount(myProjects.length);
         setTaskCount(myTasks.length);
         setFinishedProjectCount(myFinishedProjects.length);
         setStudentCount(0); // hide for student
       } else {
-        const finished = data.getProjects.filter(p =>
+        const finished = data.getProjects.filter((p) =>
           ["finished", "completed"].includes(p.status.toLowerCase())
         );
-  
+
         setProjectCount(data.getProjects.length);
         setTaskCount(data.getTasks.length);
         setFinishedProjectCount(finished.length);
@@ -81,7 +81,6 @@ const Home = () => {
       console.error("❌ Failed to fetch dashboard stats:", error);
     }
   };
-  
 
   useEffect(() => {
     fetchDashboardStats(); // ✅ this must be called here
@@ -89,37 +88,78 @@ const Home = () => {
     const interval = setInterval(() => {
       setDateTime(formatDateTime());
     }, 1000);
-    return () => clearInterval(interval);  }, []);  return (
-    <div className={`p-4 min-h-screen pt-16 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
-      <div className="mt-4 mb-8 flex flex-col sm:flex-row justify-between items-center">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">
-          <span className={`${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Welcome to the Task Management System</span>
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <div
+      className={`p-4 min-h-screen pt-16 ${
+        darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+      }`}
+    >
+      <div className="mt-6 mb-10 flex flex-col sm:flex-row justify-between items-center">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-center sm:text-left">
+          <span
+            className={`bg-clip-text text-transparent ${
+              darkMode
+                ? "bg-gradient-to-r from-blue-400 to-indigo-500"
+                : "bg-gradient-to-r from-blue-600 to-cyan-400"
+            }`}
+          >
+            Welcome to the Task Management System
+          </span>
         </h2>
-        <p className={`text-lg mt-4 sm:mt-0 text-center sm:text-right ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+        <p
+          className={`text-lg mt-4 sm:mt-0 text-center sm:text-right ${
+            darkMode ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
           {dateTime}
         </p>
-      </div><div className={`grid grid-cols-1 ${isStudent ? 'sm:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4'} gap-6 mb-8`}>
-        <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
-          <b className="block mb-3 text-lg">Number of <br /> Projects</b>
-          <span className="text-2xl font-bold">{projectCount}</span>
-        </div>
+      </div>
 
-        {!isStudent && (
-          <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
-            <b className="block mb-3 text-lg">Number of <br /> Students</b>
-            <span className="text-2xl font-bold">{studentCount}</span>
-          </div>
-        )}
-
-        <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
-          <b className="block mb-3 text-lg">Number of <br /> Tasks</b>
-          <span className="text-2xl font-bold">{taskCount}</span>
-        </div>
-
-        <div className={`p-4 rounded-xl shadow-md text-center h-full flex flex-col justify-center items-center ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
-          <b className="block mb-3 text-lg">Number of <br /> Finished Projects</b>
-          <span className="text-2xl font-bold">{finishedProjectCount}</span>
-        </div>
+      <div
+        className={`grid grid-cols-1 gap-6 mb-10 ${
+          isStudent ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"
+        }`}
+      >
+        {[
+          {
+            label: "Projects",
+            value: projectCount,
+          },
+          !isStudent && {
+            label: "Students",
+            value: studentCount,
+          },
+          {
+            label: "Tasks",
+            value: taskCount,
+          },
+          {
+            label: "Finished Projects",
+            value: finishedProjectCount,
+          },
+        ]
+          .filter(Boolean)
+          .map((card, i) => (
+            <div
+              key={i}
+              className={`relative p-6 rounded-2xl shadow-2xl flex flex-col justify-center items-center text-center transition-transform duration-300 hover:-translate-y-1 border-1 ${
+                darkMode
+                  ? "bg-gray-800/60 border-blue-500 backdrop-blur-lg"
+                  : "bg-white/80 border-blue-400 backdrop-blur-md"
+              }`}
+            >
+              <div className="mb-4">
+                <b className="block text-lg sm:text-xl">
+                  Number of <br /> {card.label}
+                </b>
+              </div>
+              <span className="text-3xl sm:text-4xl font-extrabold">
+                {card.value}
+              </span>
+            </div>
+          ))}
       </div>
 
       <div className="mt-8">
