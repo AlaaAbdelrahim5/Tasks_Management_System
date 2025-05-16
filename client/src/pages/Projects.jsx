@@ -335,20 +335,33 @@ const Projects = () => {
   const ProjectSkeleton = () => {
     return (
       <div
-        className={`rounded-xl shadow-lg overflow-hidden animate-pulse
-        ${darkMode ? "bg-gray-800" : "bg-white"}`}
+        className={`rounded-xl shadow-md overflow-hidden animate-pulse ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}
       >
-        <div
-          className={`h-3 w-1/3 m-4 rounded ${
-            darkMode ? "bg-gray-700" : "bg-gray-200"
-          }`}
-        ></div>
+        {/* Card Header */}
+        <div className="px-4 py-3 flex justify-between items-center">
+          <div
+            className={`h-3 w-24 rounded ${
+              darkMode ? "bg-gray-700" : "bg-gray-200"
+            }`}
+          ></div>
+          <div
+            className={`h-3 w-10 rounded ${
+              darkMode ? "bg-gray-700" : "bg-gray-200"
+            }`}
+          ></div>
+        </div>
+
+        {/* Card Image Area */}
         <div
           className={`h-32 ${darkMode ? "bg-gray-700" : "bg-gray-200"}`}
         ></div>
+
+        {/* Card Content */}
         <div className="p-4 space-y-3">
           <div
-            className={`h-4 w-3/4 rounded ${
+            className={`h-5 w-3/4 rounded ${
               darkMode ? "bg-gray-700" : "bg-gray-200"
             }`}
           ></div>
@@ -357,158 +370,260 @@ const Projects = () => {
               darkMode ? "bg-gray-700" : "bg-gray-200"
             }`}
           ></div>
-          <div className="flex justify-between mt-4">
+          <div className="pt-2">
             <div
-              className={`h-6 w-1/4 rounded ${
+              className={`h-2 w-full rounded-full ${
                 darkMode ? "bg-gray-700" : "bg-gray-200"
               }`}
             ></div>
+          </div>
+          <div className="flex justify-between pt-2">
             <div
-              className={`h-6 w-1/4 rounded ${
+              className={`h-6 w-16 rounded ${
                 darkMode ? "bg-gray-700" : "bg-gray-200"
               }`}
             ></div>
+            <div className="flex space-x-1">
+              <div
+                className={`h-6 w-6 rounded-full ${
+                  darkMode ? "bg-gray-700" : "bg-gray-200"
+                }`}
+              ></div>
+              <div
+                className={`h-6 w-6 rounded-full ${
+                  darkMode ? "bg-gray-700" : "bg-gray-200"
+                }`}
+              ></div>
+            </div>
           </div>
         </div>
       </div>
     );
   };
+
+  // Add scroll-to-top functionality
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <div
       className={`pt-16 pb-4 min-h-screen ${
-        darkMode ? "bg-gray-900" : "bg-gray-100"
+        darkMode
+          ? "bg-gray-900 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      <div className="m-4 max-w-screen-2xl mx-8">
+      <div className="px-6 py-4 max-w-screen-2xl mx-auto">
         {notification.show && (
           <div
-            className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md animate-fade-in transition-all ${
+            className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md animate-fade-in-down transition-all transform ${
               notification.type === "error"
                 ? darkMode
-                  ? "bg-red-900/90 text-red-100"
+                  ? "bg-red-900/90 text-red-100 border border-red-800"
                   : "bg-red-100 text-red-800 border border-red-200"
                 : notification.type === "success"
                 ? darkMode
-                  ? "bg-green-900/90 text-green-100"
+                  ? "bg-green-900/90 text-green-100 border border-green-800"
                   : "bg-green-100 text-green-800 border border-green-200"
                 : darkMode
-                ? "bg-yellow-900/90 text-yellow-100"
+                ? "bg-yellow-900/90 text-yellow-100 border border-yellow-800"
                 : "bg-yellow-100 text-yellow-800 border border-yellow-200"
             } flex items-center justify-between`}
           >
             <div className="flex items-center">
               {notification.type === "error" && (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+                <div
+                  className={`p-1 rounded-full mr-3 ${
+                    darkMode ? "bg-red-800" : "bg-red-200"
+                  }`}
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-              {notification.type === "success" && (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-              {notification.type === "warning" && (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-              <span>{notification.message}</span>
-            </div>
-            <button
-              onClick={() =>
-                setNotification((prev) => ({ ...prev, show: false }))
-              }
-              className="ml-4 text-sm opacity-70 hover:opacity-100"
-            >
-              &times;
-            </button>
-          </div>        )}
-
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className={`text-3xl font-bold mb-2 ${darkMode ? "text-white" : "text-gray-800"}`}>
-                {isStudent ? "Your Projects" : "Projects Overview"}
-              </h1>
-              <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                Manage and track your project portfolio
-              </p>
-            </div>
-            <div className={`px-4 py-2 rounded-lg ${darkMode ? "bg-blue-900/30" : "bg-blue-100"}`}>
-              <span className={`font-medium ${darkMode ? "text-blue-300" : "text-blue-700"}`}>
-                {sortedProjects.length} {sortedProjects.length === 1 ? 'Project' : 'Projects'}
-              </span>
-            </div>
-          </div>
-          <div className="w-full h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mt-4"></div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-2">
-            {!isStudent && (
-              <button
-                onClick={() => setShowForm(true)}
-                className={`px-4 py-2.5 rounded-lg shadow-md transition-all ${
-                  darkMode
-                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
-                    : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
-                }`}
-              >
-                <span className="flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-1"
+                    className="h-5 w-5"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
                     <path
                       fillRule="evenodd"
-                      d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  Add New Project
+                </div>
+              )}
+              {notification.type === "success" && (
+                <div
+                  className={`p-1 rounded-full mr-3 ${
+                    darkMode ? "bg-green-800" : "bg-green-200"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              )}
+              {notification.type === "warning" && (
+                <div
+                  className={`p-1 rounded-full mr-3 ${
+                    darkMode ? "bg-yellow-800" : "bg-yellow-200"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              )}
+              <span className="font-medium">{notification.message}</span>
+            </div>
+            <button
+              onClick={() =>
+                setNotification((prev) => ({ ...prev, show: false }))
+              }
+              className="ml-4 p-1 hover:bg-black hover:bg-opacity-10 rounded-full transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="relative">
+              <h1
+                className={`text-3xl font-bold mb-2 ${
+                  darkMode ? "text-white" : "text-gray-800"
+                }`}
+              >
+                {isStudent ? "Your Projects" : "Projects Overview"}
+              </h1>
+              <p
+                className={`text-sm ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Manage and track your project portfolio
+              </p>
+              <div className="w-20 h-1 mt-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"></div>
+            </div>{" "}
+            <div className="flex items-center gap-3">
+              <div
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  darkMode
+                    ? "bg-blue-900/30 text-blue-300"
+                    : "bg-blue-100 text-blue-700"
+                } shadow-sm`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                </svg>
+                <span className="font-medium">
+                  {sortedProjects.length}{" "}
+                  {sortedProjects.length === 1 ? "Project" : "Projects"}
                 </span>
+              </div>
+            </div>
+          </div>
+          <div className="w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full mt-4 opacity-30"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-2">
+            {!isStudent && (
+              <button
+                onClick={() => setShowForm(true)}
+                className={`px-4 py-2.5 rounded-lg shadow-md transition-all flex items-center gap-2 ${
+                  darkMode
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:from-blue-700 hover:to-purple-700"
+                    : "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:from-blue-600 hover:to-purple-700"
+                }`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Add New Project
               </button>
             )}
 
             <div className="relative flex-grow">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-gray-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
               <input
                 type="text"
-                placeholder="Search projects by title or description..."
+                placeholder="Search projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`px-3 py-2 rounded w-full pr-10 transition-colors ${
+                className={`pl-10 px-3 py-2.5 rounded-lg w-full pr-10 transition-colors shadow-sm border ${
                   darkMode
-                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                    : "border border-gray-400 text-gray-800 placeholder-gray-600"
+                    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    : "bg-white border-gray-300 text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 }`}
               />
               {searchQuery && (
@@ -533,68 +648,152 @@ const Projects = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={`px-3 py-2 rounded transition-colors ${
-                darkMode
-                  ? "bg-gray-700 border-gray-600 text-white"
-                  : "border border-gray-400 text-gray-800"
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div
+              className={`relative rounded-lg shadow-sm ${
+                darkMode ? "bg-gray-800" : "bg-white"
               }`}
             >
-              <option>All Status</option>
-              <option>In Progress</option>
-              <option>Completed</option>
-              <option>Pending</option>
-              <option>On Hold</option>
-              <option>Cancelled</option>
-            </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className={`appearance-none w-full pl-4 pr-10 py-2.5 rounded-lg transition-colors ${
+                  darkMode
+                    ? "bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    : "bg-white border border-gray-300 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                }`}
+              >
+                <option>All Status</option>
+                <option>In Progress</option>
+                <option>Completed</option>
+                <option>Pending</option>
+                <option>On Hold</option>
+                <option>Cancelled</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className={`px-3 py-2 rounded transition-colors ${
-                darkMode
-                  ? "bg-gray-700 border-gray-600 text-white"
-                  : "border border-gray-400 text-gray-800"
+            <div
+              className={`relative rounded-lg shadow-sm ${
+                darkMode ? "bg-gray-800" : "bg-white"
               }`}
             >
-              {categories.map((category) => (
-                <option key={category}>{category}</option>
-              ))}
-            </select>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className={`appearance-none w-full pl-4 pr-10 py-2.5 rounded-lg transition-colors ${
+                  darkMode
+                    ? "bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    : "bg-white border border-gray-300 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                }`}
+              >
+                {categories.map((category) => (
+                  <option key={category}>{category}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className={`px-3 py-2 rounded transition-colors ${
-                darkMode
-                  ? "bg-gray-700 border-gray-600 text-white"
-                  : "border border-gray-400 text-gray-800"
+            <div
+              className={`relative rounded-lg shadow-sm ${
+                darkMode ? "bg-gray-800" : "bg-white"
               }`}
             >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="dueDate">Due Date</option>
-              <option value="alphabetical">Alphabetical</option>
-            </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className={`appearance-none w-full pl-4 pr-10 py-2.5 rounded-lg transition-colors ${
+                  darkMode
+                    ? "bg-gray-700 border border-gray-600 text-white focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+                    : "bg-white border border-gray-300 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                }`}
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="dueDate">Due Date</option>
+                <option value="alphabetical">Alphabetical</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
-        </div>
-
+        </div>{" "}
         {showForm && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="w-full max-w-lg p-1 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl">
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-transparent bg-opacity-30 backdrop-blur-sm p-4">
+            <div className="w-full max-w-lg p-1.5 rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-2xl animate-fade-in">
               <form
                 onSubmit={handleAddProject}
-                className={`p-6 rounded-xl shadow-lg w-full max-h-[90vh] overflow-y-auto ${formBg} transition-all duration-300`}
+                className={`p-6 sm:p-8 rounded-lg shadow-lg w-full max-h-[90vh] overflow-y-auto ${formBg} transition-all duration-300`}
               >
-                <h2 className="text-2xl font-bold text-center mb-6">
-                  Create New Project
-                  <div className="mt-2 w-24 h-1 bg-blue-500 mx-auto rounded-full" />
-                </h2>
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold">Create New Project</h2>
+                    <div className="mt-2 w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false);
+                      setDateError("");
+                    }}
+                    className={`p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="relative">
                     <input
                       type="text"
@@ -618,7 +817,7 @@ const Projects = () => {
                       placeholder="Provide project details..."
                       value={formData.description}
                       onChange={handleInputChange}
-                      className={`w-full p-4 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all min-h-[100px]`}
+                      className={`w-full p-4 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all min-h-[120px]`}
                       rows={4}
                       required
                     />
@@ -629,13 +828,123 @@ const Projects = () => {
                     </label>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative">
+                      <select
+                        name="category"
+                        value={formData.category}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+                        required
+                      >
+                        <option value="">Select a Category</option>
+                        <option>Web Development</option>
+                        <option>Mobile Development</option>
+                        <option>Data Science</option>
+                        <option>Machine Learning</option>
+                        <option>Other</option>
+                      </select>
+                      <label
+                        className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
+                      >
+                        Category
+                      </label>
+                    </div>
+
+                    <div className="relative">
+                      <select
+                        name="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
+                      >
+                        <option>In Progress</option>
+                        <option>Completed</option>
+                        <option>Pending</option>
+                        <option>On Hold</option>
+                        <option>Cancelled</option>
+                      </select>
+                      <label
+                        className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
+                      >
+                        Status
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative">
+                      <input
+                        type="date"
+                        name="startDate"
+                        value={formData.startDate}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all ${
+                          dateError && dateError.includes("Start date")
+                            ? "border-red-500 focus:ring-red-500"
+                            : ""
+                        }`}
+                        required
+                      />
+                      <label
+                        className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
+                      >
+                        Start Date
+                      </label>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="date"
+                        name="endDate"
+                        value={formData.endDate}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all ${
+                          dateError && dateError.includes("Due date")
+                            ? "border-red-500 focus:ring-red-500"
+                            : ""
+                        }`}
+                        required
+                      />
+                      <label
+                        className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
+                      >
+                        End Date
+                      </label>
+                    </div>
+                  </div>
+
+                  {dateError && (
+                    <div
+                      className={`text-red-500 text-sm p-4 rounded-lg flex items-center space-x-2 border ${
+                        darkMode
+                          ? "bg-red-900/20 border-red-800"
+                          : "bg-red-50 border-red-200"
+                      }`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 flex-shrink-0"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>{dateError}</span>
+                    </div>
+                  )}
+
                   <div className="relative">
                     <select
                       name="students"
                       multiple
                       value={formData.students}
                       onChange={handleInputChange}
-                      className={`w-full p-4 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all h-32`}
+                      className={`w-full p-4 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all h-36`}
                     >
                       {studentList.map((s) => (
                         <option key={s.email} value={s.username}>
@@ -648,114 +957,21 @@ const Projects = () => {
                     >
                       Assigned Students
                     </label>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Hold Ctrl/Cmd key to select multiple students
+                    <div className="text-xs mt-1 flex items-center gap-1 text-gray-500">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Hold Ctrl key to select multiple students
                     </div>
-                  </div>
-
-                  <div className="relative">
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
-                      required
-                    >
-                      <option value="">Select a Category</option>
-                      <option>Web Development</option>
-                      <option>Mobile Development</option>
-                      <option>Data Science</option>
-                      <option>Machine Learning</option>
-                      <option>Other</option>
-                    </select>
-                    <label
-                      className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
-                    >
-                      Category
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      name="startDate"
-                      value={formData.startDate}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all ${
-                        dateError && dateError.includes("Start date")
-                          ? "border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
-                      required
-                    />
-                    <label
-                      className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
-                    >
-                      Start Date
-                    </label>
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      type="date"
-                      name="endDate"
-                      value={formData.endDate}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all ${
-                        dateError && dateError.includes("Due date")
-                          ? "border-red-500 focus:ring-red-500"
-                          : ""
-                      }`}
-                      required
-                    />
-                    <label
-                      className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
-                    >
-                      End Date
-                    </label>
-                  </div>
-
-                  {dateError && (
-                    <div
-                      className={`text-red-500 text-sm p-3 rounded-lg border border-red-400 ${
-                        darkMode ? "bg-red-900 bg-opacity-20" : "bg-red-50"
-                      }`}
-                    >
-                      <span className="flex items-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 mr-2"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        {dateError}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="relative">
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 rounded-lg border-2 ${fieldBg} focus:outline-none focus:ring-2 focus:ring-${accentColor}-500 focus:border-transparent transition-all`}
-                    >
-                      <option>In Progress</option>
-                      <option>Completed</option>
-                      <option>Pending</option>
-                      <option>On Hold</option>
-                      <option>Cancelled</option>
-                    </select>
-                    <label
-                      className={`text-xs font-medium ${labelColor} absolute -top-2 left-2 px-1 ${formBg}`}
-                    >
-                      Status
-                    </label>
                   </div>
                 </div>
 
@@ -766,7 +982,7 @@ const Projects = () => {
                       setShowForm(false);
                       setDateError("");
                     }}
-                    className={`px-5 py-2.5 rounded-lg font-medium border-2 ${
+                    className={`px-5 py-2.5 rounded-lg font-medium border ${
                       darkMode
                         ? "border-gray-600 text-gray-300 hover:bg-gray-700"
                         : "border-gray-300 text-gray-600 hover:bg-gray-100"
@@ -776,7 +992,7 @@ const Projects = () => {
                   </button>
                   <button
                     type="submit"
-                    className={`px-5 py-2.5 rounded-lg font-medium bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200`}
+                    className={`px-5 py-2.5 rounded-lg font-medium bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all duration-200`}
                   >
                     Create Project
                   </button>
@@ -784,7 +1000,8 @@ const Projects = () => {
               </form>
             </div>
           </div>
-        )}        {isLoading ? (
+        )}
+        {isLoading ? (
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
               <ProjectSkeleton key={i} />
@@ -804,10 +1021,11 @@ const Projects = () => {
                 return Math.round((elapsed / total) * 100);
               };
 
-              return (                <div
+              return (
+                <div
                   key={project.id}
                   onClick={() => setSelectedProject(project)}
-                  className="h-full cursor-pointer transform hover:scale-[1.02] hover:shadow-lg transition-all duration-300"
+                  className="h-full cursor-pointer transform transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1 hover:shadow-xl"
                 >
                   <ProjectCard
                     project={{
@@ -822,15 +1040,294 @@ const Projects = () => {
           </div>
         ) : (
           <div
-            className={`mt-10 text-center p-8 rounded-lg ${
-              darkMode ? "bg-gray-800" : "bg-white"
-            }`}
+            className={`mt-10 text-center p-10 rounded-xl shadow-lg border ${
+              darkMode
+                ? "bg-gray-800/70 border-gray-700 backdrop-blur-sm"
+                : "bg-white/80 border-gray-100 backdrop-blur-sm"
+            } max-w-2xl mx-auto animate-fade-in`}
+          >
+            <div className="flex flex-col items-center">
+              {searchQuery ||
+              statusFilter !== "All Status" ||
+              categoryFilter !== "All Categories" ? (
+                <>
+                  <div
+                    className={`p-4 rounded-full mb-5 ${
+                      darkMode ? "bg-gray-700" : "bg-gray-100"
+                    }`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-16 w-16 ${
+                        darkMode ? "text-gray-500" : "text-gray-400"
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </div>
+                  <h3
+                    className={`text-2xl font-bold ${
+                      darkMode ? "text-white" : "text-gray-800"
+                    }`}
+                  >
+                    No matching projects found
+                  </h3>
+                  <p
+                    className={`mt-3 max-w-md text-lg ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    We couldn't find any projects that match your current
+                    filters.
+                  </p>
+
+                  <div className="mt-6 flex flex-wrap gap-3 justify-center">
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className={`px-4 py-2 rounded-lg flex items-center ${
+                          darkMode
+                            ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        } transition-colors`}
+                      >
+                        <span>Clear Search</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 ml-2"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                    {statusFilter !== "All Status" && (
+                      <button
+                        onClick={() => setStatusFilter("All Status")}
+                        className={`px-4 py-2 rounded-lg flex items-center ${
+                          darkMode
+                            ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        } transition-colors`}
+                      >
+                        <span>Clear Status Filter</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 ml-2"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                    {categoryFilter !== "All Categories" && (
+                      <button
+                        onClick={() => setCategoryFilter("All Categories")}
+                        className={`px-4 py-2 rounded-lg flex items-center ${
+                          darkMode
+                            ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        } transition-colors`}
+                      >
+                        <span>Clear Category Filter</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 ml-2"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div
+                    className={`p-5 rounded-full mb-6 ${
+                      darkMode
+                        ? "bg-gradient-to-br from-blue-900/50 to-purple-900/50"
+                        : "bg-gradient-to-br from-blue-100 to-purple-100"
+                    }`}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-20 w-20 ${
+                        darkMode ? "text-blue-400" : "text-blue-600"
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1}
+                        d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                  </div>
+                  <h3
+                    className={`text-2xl font-bold ${
+                      darkMode ? "text-white" : "text-gray-800"
+                    }`}
+                  >
+                    No projects yet
+                  </h3>
+                  <p
+                    className={`mt-3 max-w-md text-lg ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    {isStudent
+                      ? "You haven't been assigned to any projects yet."
+                      : "Create your first project to start tracking your work."}
+                  </p>
+                  {!isStudent && (
+                    <button
+                      onClick={() => setShowForm(true)}
+                      className="mt-8 px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 font-medium"
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Create New Project
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Delete confirmation modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm p-4">
+            <div
+              className={`w-full max-w-md p-6 rounded-lg ${
+                darkMode ? "bg-gray-800" : "bg-white"
+              } shadow-xl animate-fade-in transform transition-all duration-300`}
+            >
+              <div className="flex items-start mb-4">
+                <div
+                  className={`p-2 rounded-full mr-3 ${
+                    darkMode ? "bg-red-900/30" : "bg-red-100"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`h-6 w-6 ${
+                      darkMode ? "text-red-400" : "text-red-600"
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3
+                    className={`text-xl font-bold ${
+                      darkMode ? "text-white" : "text-gray-800"
+                    }`}
+                  >
+                    Confirm Delete
+                  </h3>
+                  <p
+                    className={`my-3 ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  >
+                    Are you sure you want to delete this project? This action
+                    cannot be undone and all associated data will be permanently
+                    removed.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setProjectToDelete(null);
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    darkMode
+                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteProjectConfirm}
+                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all"
+                >
+                  Delete Project
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <ProjectSidebar
+          project={selectedProject}
+          onClose={() => setSelectedProject(null)}
+          onDelete={handleDeleteProject}
+          darkMode={darkMode}
+        />
+        {/* Scroll to top button */}
+        {showScrollTop && (
+          <button
+            onClick={scrollToTop}
+            className={`fixed bottom-8 right-8 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
+              darkMode
+                ? "bg-gray-800 text-blue-400 hover:bg-gray-700"
+                : "bg-white text-blue-600 hover:bg-blue-50"
+            } z-30`}
+            title="Scroll to top"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className={`h-16 w-16 mx-auto ${
-                darkMode ? "text-gray-600" : "text-gray-400"
-              }`}
+              className="h-6 w-6"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -838,91 +1335,12 @@ const Projects = () => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={1}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                strokeWidth={2}
+                d="M5 10l7-7m0 0l7 7m-7-7v18"
               />
             </svg>
-            <h3
-              className={`text-xl mt-4 font-medium ${
-                darkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              No projects found
-            </h3>
-            <p
-              className={`mt-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}
-            >
-              {searchQuery ||
-              statusFilter !== "All Status" ||
-              categoryFilter !== "All Categories"
-                ? "Try adjusting your filters to see more results"
-                : "Create a new project to get started"}
-            </p>
-            {!isStudent && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Create New Project
-              </button>
-            )}
-          </div>
+          </button>
         )}
-
-        {/* Delete confirmation modal */}
-        {showDeleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div
-              className={`w-full max-w-md p-6 rounded-lg ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              } shadow-xl`}
-            >
-              <h3
-                className={`text-xl font-bold ${
-                  darkMode ? "text-white" : "text-gray-800"
-                }`}
-              >
-                Confirm Delete
-              </h3>
-              <p
-                className={`my-4 ${
-                  darkMode ? "text-gray-300" : "text-gray-600"
-                }`}
-              >
-                Are you sure you want to delete this project? This action cannot
-                be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setProjectToDelete(null);
-                  }}
-                  className={`px-4 py-2 rounded ${
-                    darkMode
-                      ? "bg-gray-700 text-gray-300"
-                      : "bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteProjectConfirm}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <ProjectSidebar
-          project={selectedProject}
-          onClose={() => setSelectedProject(null)}
-          onDelete={handleDeleteProject}
-          darkMode={darkMode}
-        />
       </div>
     </div>
   );

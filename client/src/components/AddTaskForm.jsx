@@ -237,7 +237,7 @@ const AddTaskForm = ({ onClose, onSubmit }) => {
   };
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm">
       <div className={`w-full max-w-md p-1 rounded-xl ${darkMode ? 'bg-gradient-to-br from-blue-600 to-purple-700' : 'bg-gradient-to-br from-blue-500 to-purple-600'} shadow-2xl`}>
         <form
           onSubmit={handleSubmit}
