@@ -44,6 +44,21 @@
     100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
 
+/* Fade in animation for Tasks page items */
+@keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Scale hover animation */
+.hover\:scale-102:hover {
+    transform: scale(1.02);
+}
+
 /* Scrollbar Styling */
 .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
@@ -184,4 +199,126 @@ body {
 
 .mobile-chat-nav {
     animation: floatingPulse 2s infinite;
+}
+
+/* Description cell styling */
+.description-cell {
+    width: 100%;
+    max-width: 250px;
+    min-width: 150px;
+    height: auto;
+    max-height: 120px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-all;
+    padding-right: 5px;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    transition: all 0.2s ease;
+    border-radius: 5px;
+}
+
+.description-cell:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .description-cell:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.description-text {
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+    word-break: break-word;
+    hyphens: auto;
+}
+
+/* Table column widths */
+.tasks-table {
+    table-layout: fixed;
+}
+
+.tasks-table th:nth-child(1), /* Task ID */
+.tasks-table td:nth-child(1) {
+    width: 8%;
+}
+
+.tasks-table th:nth-child(2), /* Project */
+.tasks-table td:nth-child(2) {
+    width: 10%;
+}
+
+.tasks-table th:nth-child(3), /* Name */
+.tasks-table td:nth-child(3) {
+    width: 15%;
+}
+
+.tasks-table th:nth-child(4), /* Description */
+.tasks-table td:nth-child(4) {
+    width: 20%;
+    max-width: 20%;
+}
+
+.tasks-table th:nth-child(5), /* Student */
+.tasks-table td:nth-child(5) {
+    width: 12%;
+}
+
+.tasks-table th:nth-child(6), /* Status */
+.tasks-table td:nth-child(6) {
+    width: 12%;
+}
+
+.tasks-table th:nth-child(7), /* Due Date */
+.tasks-table td:nth-child(7) {
+    width: 12%;
+}
+
+.tasks-table th:nth-child(8), /* Actions */
+.tasks-table td:nth-child(8) {
+    width: 11%;
+}
+
+/* Responsive table wrapper */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    position: relative;
+}
+
+/* Ensure the "Show more" button is visible at all times */
+.description-cell button {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9) 40%);
+    width: 100%;
+    text-align: center;
+    padding: 4px 0;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    border-radius: 0 0 4px 4px;
+    display: block; /* Ensure it's always visible */
+    cursor: pointer;
+}
+
+.description-cell button:hover {
+    background: linear-gradient(to bottom, transparent, rgba(219, 234, 254, 0.95) 40%);
+    color: #2563eb !important;
+    font-weight: bold;
+}
+
+.dark .description-cell button {
+    background: linear-gradient(to bottom, transparent, rgba(30, 41, 59, 0.9) 40%);
+}
+
+.dark .description-cell button:hover {
+    background: linear-gradient(to bottom, transparent, rgba(30, 41, 59, 0.95) 40%);
+    color: #60a5fa !important;
 }
