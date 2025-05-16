@@ -13,12 +13,12 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (isStudent && !universityId) {
       alert("Please enter your University ID");
       return;
     }
-  
+
     const query = `
       mutation SignUp($userInput: SignUpInput!) {
         signUp(userInput: $userInput) {
@@ -28,7 +28,7 @@ const SignUp = () => {
         }
       }
     `;
-  
+
     const variables = {
       userInput: {
         email,
@@ -38,50 +38,75 @@ const SignUp = () => {
         universityId: isStudent ? universityId : null,
       },
     };
-  
+
     try {
       const response = await fetch("http://localhost:4000/graphql", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, variables }),
       });
-  
+
       const result = await response.json();
-  
+
       if (result.errors) {
         alert(result.errors[0].message);
         return;
       }
-  
-      // Signup success — optionally store user, redirect
+
       navigate("/login");
-    }  catch (err) {
+    } catch (err) {
       console.error("Signup error:", err);
       alert("Signup failed: " + err.message);
     }
   };
+
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-gradient-to-b from-gray-900 to-gray-800' : 'bg-gradient-to-b from-blue-50 to-gray-100'} px-4 sm:px-6 lg:px-8`}>
-      <div className={`p-5 sm:p-8 rounded-xl shadow-lg border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white/90 border-gray-200'} w-full max-w-md mx-auto backdrop-blur-sm mt-8`}>
-        <h3 className={`text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-          Sign Up
+    <div
+      className={`min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden ${
+        darkMode
+          ? "bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900"
+          : "bg-gradient-to-br from-blue-100 via-white to-blue-300"
+      }`}
+    >
+      {/* Animated background blobs */}
+      <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-400 opacity-30 rounded-full blur-3xl animate-blob1 pointer-events-none z-0"></div>
+      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-400 opacity-30 rounded-full blur-3xl animate-blob2 pointer-events-none z-0"></div>
+
+      <div
+        className={`relative z-10 p-5 sm:p-8 rounded-2xl mt-4 shadow-2xl border transition-all duration-500 ${
+          darkMode
+            ? "bg-gradient-to-br from-gray-800 via-gray-900 to-blue-900 border-gray-700"
+            : "bg-white/90 border-blue-200"
+        } w-full max-w-md mx-auto backdrop-blur-md mt-8 animate-fadeIn`}
+      >
+        <h3
+          className={`text-2xl sm:text-3xl font-extrabold text-center tracking-tight transition-colors duration-300 ${
+            darkMode ? "text-blue-200 drop-shadow-lg" : "text-blue-700"
+          } animate-slideDown`}
+        >
+          <span className="inline-block animate-pop mb-2">Sign Up</span>
         </h3>
 
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-          <div>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 sm:space-y-6 animate-fadeIn delay-200"
+        >
+          <div className="group transition-all duration-300">
             <label
               htmlFor="email"
-              className={`block mb-1 font-medium text-sm sm:text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+              className={`block font-semibold text-sm sm:text-base transition-colors duration-300 ${
+                darkMode ? "text-blue-100" : "text-blue-900"
+              }`}
             >
               Email
             </label>
             <input
               type="email"
               id="email"
-              className={`w-full px-3 sm:px-4 py-2 rounded-md text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'border border-gray-300'
+              className={`w-full px-4 py-2 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 shadow-sm ${
+                darkMode
+                  ? "bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600"
+                  : "border border-gray-300 focus:bg-blue-50"
               }`}
               placeholder="Enter your email"
               value={email}
@@ -90,20 +115,22 @@ const SignUp = () => {
             />
           </div>
 
-          <div>
+          <div className="group transition-all duration-300">
             <label
               htmlFor="username"
-              className={`block mb-1 font-medium text-sm sm:text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+              className={`block font-semibold text-sm sm:text-base transition-colors duration-300 ${
+                darkMode ? "text-blue-100" : "text-blue-900"
+              }`}
             >
               Username
             </label>
             <input
               type="text"
               id="username"
-              className={`w-full px-3 sm:px-4 py-2 rounded-md text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'border border-gray-300'
+              className={`w-full px-4 py-2 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 shadow-sm ${
+                darkMode
+                  ? "bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600"
+                  : "border border-gray-300 focus:bg-blue-50"
               }`}
               placeholder="Enter your username"
               value={username}
@@ -112,20 +139,22 @@ const SignUp = () => {
             />
           </div>
 
-          <div>
+          <div className="group transition-all duration-300">
             <label
               htmlFor="password"
-              className={`block mb-1 font-medium text-sm sm:text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+              className={`block font-semibold text-sm sm:text-base transition-colors duration-300 ${
+                darkMode ? "text-blue-100" : "text-blue-900"
+              }`}
             >
               Password
             </label>
             <input
               type="password"
               id="password"
-              className={`w-full px-3 sm:px-4 py-2 rounded-md text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                darkMode 
-                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                  : 'border border-gray-300'
+              className={`w-full px-4 py-2 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 shadow-sm ${
+                darkMode
+                  ? "bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600"
+                  : "border border-gray-300 focus:bg-blue-50"
               }`}
               placeholder="Enter your password"
               value={password}
@@ -134,60 +163,114 @@ const SignUp = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 animate-fadeIn delay-300">
             <input
               type="checkbox"
               id="isStudent"
-              className="w-4 h-4"
+              className="w-4 h-4 accent-blue-500 transition-all duration-200"
               checked={isStudent}
               onChange={() => setIsStudent(!isStudent)}
             />
-            <label htmlFor="isStudent" className={`text-xs sm:text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+            <label
+              htmlFor="isStudent"
+              className={`text-sm sm:text-base cursor-pointer transition-colors duration-300 ${
+                darkMode ? "text-blue-200" : "text-blue-700"
+              }`}
+            >
               I am a student
             </label>
           </div>
 
           {isStudent && (
-            <div>
+            <div className="animate-slideDown">
               <label
                 htmlFor="universityId"
-                className={`block mb-1 font-medium text-sm sm:text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                className={`block font-semibold text-sm sm:text-base transition-colors duration-300 ${
+                  darkMode ? "text-blue-100" : "text-blue-900"
+                }`}
               >
                 University ID
               </label>
               <input
                 type="text"
                 id="universityId"
-                className={`w-full px-3 sm:px-4 py-2 rounded-md text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'border border-gray-300'
+                className={`w-full px-4 py-2 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 shadow-sm ${
+                  darkMode
+                    ? "bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:bg-gray-600"
+                    : "border border-gray-300 focus:bg-blue-50"
                 }`}
                 placeholder="Enter your University ID"
                 value={universityId}
                 onChange={(e) => setUniversityId(e.target.value)}
               />
             </div>
-          )}          <button
+          )}
+
+          <button
             type="submit"
-            className={`w-full py-3 rounded-md font-medium shadow-md hover:shadow-lg transition duration-300 transform hover:scale-[1.01] text-sm sm:text-base mt-2 sm:mt-4 focus:outline-none ${
-              darkMode ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
+            className={`w-full py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-base mt-2 sm:mt-4 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
+              darkMode
+                ? "bg-gradient-to-r from-blue-600 via-blue-500 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                : "bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+            } animate-pop`}
           >
             Sign Up
           </button>
         </form>
 
-        <div className={`mt-6 text-xs sm:text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        <div
+          className={`mt-8 text-sm text-center transition-colors duration-300 ${
+            darkMode ? "text-blue-100" : "text-blue-900"
+          } animate-fadeIn delay-500`}
+        >
           Already have an account?{" "}
-          <Link 
-            to="/login" 
-            className={`hover:underline ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
+          <Link
+            to="/login"
+            className={`hover:underline font-semibold transition-colors duration-200 ${
+              darkMode
+                ? "text-blue-400 hover:text-blue-300"
+                : "text-blue-600 hover:text-blue-800"
+            }`}
           >
             Login
           </Link>
         </div>
       </div>
+
+      {/* Animations */}
+      <style>
+        {`
+        @keyframes fadeIn {
+          0% { opacity: 0; transform: translateY(20px);}
+          100% { opacity: 1; transform: translateY(0);}
+        }
+        @keyframes slideDown {
+          0% { opacity: 0; transform: translateY(-30px);}
+          100% { opacity: 1; transform: translateY(0);}
+        }
+        @keyframes pop {
+          0% { transform: scale(0.9);}
+          60% { transform: scale(1.05);}
+          100% { transform: scale(1);}
+        }
+        @keyframes blob1 {
+          0%,100% { transform: scale(1) translate(0,0);}
+          50% { transform: scale(1.15) translate(40px, 30px);}
+        }
+        @keyframes blob2 {
+          0%,100% { transform: scale(1) translate(0,0);}
+          50% { transform: scale(1.1) translate(-30px, -20px);}
+        }
+        .animate-fadeIn { animation: fadeIn 0.8s cubic-bezier(.4,0,.2,1) both;}
+        .animate-slideDown { animation: slideDown 0.7s cubic-bezier(.4,0,.2,1) both;}
+        .animate-pop { animation: pop 0.5s cubic-bezier(.4,0,.2,1) both;}
+        .animate-blob1 { animation: blob1 8s ease-in-out infinite;}
+        .animate-blob2 { animation: blob2 10s ease-in-out infinite;}
+        .delay-200 { animation-delay: 0.2s;}
+        .delay-300 { animation-delay: 0.3s;}
+        .delay-500 { animation-delay: 0.5s;}
+        `}
+      </style>
     </div>
   );
 };
