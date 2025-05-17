@@ -133,9 +133,9 @@ The application includes a real-time chat feature implemented via:
    ```powershell
    node index.js
 
-**Note:** Be sure to update the MongoDB connection URL in `index.js` with your own database URI.
-   ```
-   The GraphQL playground will be available at http://localhost:4000/graphql
+Note: Be sure to update the MongoDB connection URL in `index.js` with your own database URI.
+
+The GraphQL playground will be available at http://localhost:4000/graphql
 
 ### Frontend Setup
 1. Navigate to the client directory:
