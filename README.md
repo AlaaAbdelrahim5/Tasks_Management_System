@@ -129,16 +129,11 @@ The application includes a real-time chat feature implemented via:
    npm install
    ```
 
-3. Create a `.env` file with your MongoDB connection string and JWT secret:
-   ```
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   PORT=4000
-   ```
-
-4. Start the server:
+3. Start the server:
    ```powershell
    node index.js
+
+**Note:** Be sure to update the MongoDB connection URL in `index.js` with your own database URI.
    ```
    The GraphQL playground will be available at http://localhost:4000/graphql
 
@@ -169,14 +164,14 @@ The application includes a real-time chat feature implemented via:
 
 ## Project Phases
 
-### React + Tailwind CSS
+### Frontend Phase: React + Tailwind CSS
 - Refactor the front-end code to use React for building the user interface
 - Integrate Tailwind CSS for styling to enhance the visual appeal and responsiveness
 - Implement state management to handle project data dynamically
 - Create reusable components for projects cards, modals, forms, etc.
 - Ensure full functionality with the new React architecture
 
-### Node.js Backend and Integration
+### Backend Phase: Node.js Backend and Integration
 - Develop a Node.js backend to handle data storage and retrieval
 - Set up GraphQL to manage project data
 - Integrate the front-end with the backend to fetch and display real data
