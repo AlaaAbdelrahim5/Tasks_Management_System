@@ -1,10 +1,11 @@
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ThemeContext, AuthContext } from "../App";
+import { ThemeContext, AuthContext, NavigationContext } from "../App";
 
 const Login = () => {
   const { darkMode } = useContext(ThemeContext);
   const { setIsLoggedIn, setCurrentUser } = useContext(AuthContext);
+  const { updateLastVisitedPage } = useContext(NavigationContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [staySignedIn, setStaySignedIn] = useState(false);
@@ -58,6 +59,9 @@ const Login = () => {
       setIsLoggedIn(true);
       setCurrentUser(user);
       setLoading(false);
+
+      // Update the last visited page to home initially
+      updateLastVisitedPage("/home");
       navigate("/home");
     } catch (err) {
       setShake(true);
