@@ -20,7 +20,11 @@ export const ThemeContext = createContext();
 export const AuthContext = createContext();
 export const NavigationContext = createContext();
 
+// Set this to false to use normal routing, or true to render the test component
+const TEST_MODE = false;
+
 function App() {
+  console.log("App component rendering"); // Debug log
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [lastVisitedPage, setLastVisitedPage] = useState("/home");
@@ -32,17 +36,22 @@ function App() {
 
   // Effect for checking login status on page load
   useEffect(() => {
+    console.log("Initial authentication check"); // Debug log
     const user = localStorage.getItem("user");
     const stayLoggedIn = localStorage.getItem("stayLoggedIn");
     const savedPage = localStorage.getItem("lastVisitedPage");
 
+    console.log("User data exists:", !!user); // Debug log
+
     if (savedPage) {
       setLastVisitedPage(savedPage);
+      console.log("Last visited page:", savedPage); // Debug log
     }
 
     if (user) {
       const userData = JSON.parse(user);
       setCurrentUser(userData);
+      console.log("User authenticated:", userData.username); // Debug log
 
       // Always keep the user logged in within browser sessions
       // This ensures page refreshes don't log the user out
@@ -69,6 +78,7 @@ function App() {
     // Save preference to localStorage
     localStorage.setItem("darkMode", JSON.stringify(darkMode));
   }, [darkMode]);
+  
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -81,25 +91,29 @@ function App() {
     }
   };
 
-  // Route tracker component to record page visits
+  // This component will track route changes
   const RouteTracker = () => {
     const location = useLocation();
+    console.log("Current route:", location.pathname); // Debug log
 
     useEffect(() => {
+      // Only update for real pages (not login/signup)
       if (
-        isLoggedIn &&
         location.pathname !== "/login" &&
-        location.pathname !== "/signup"
+        location.pathname !== "/signup" &&
+        location.pathname !== "/"
       ) {
         updateLastVisitedPage(location.pathname);
       }
-    }, [location]);
+    }, [location.pathname]);
 
     return null;
   };
 
-  const ProtectedRoute = ({ element }) =>
-    isLoggedIn ? (
+  const ProtectedRoute = ({ element }) => {
+    console.log("Protected route check - isLoggedIn:", isLoggedIn); // Debug log
+
+    return isLoggedIn ? (
       <>
         <Sidebar />
         <Header />
@@ -113,16 +127,19 @@ function App() {
       </>
     ) : (
       <Navigate to="/login" />
-    ); // Add an effect to redirect to login if user is not logged in when the app starts
+    );
+  };
+
+  // Add an effect to redirect to login if user is not logged in when the app starts
   useEffect(() => {
     // This will cause an automatic redirect to login page on page load if not logged in
     const checkAuth = () => {
-      if (!isLoggedIn) {
-        // No need to do anything, routing will handle it
-      }
+      console.log("Authentication check - isLoggedIn:", isLoggedIn); // Debug log
+      console.log("Will redirect to:", isLoggedIn ? lastVisitedPage : "/login"); // Debug log
     };
     checkAuth();
   }, [isLoggedIn]);
+
   return (
     <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
       <AuthContext.Provider
@@ -131,66 +148,75 @@ function App() {
         <NavigationContext.Provider
           value={{ lastVisitedPage, updateLastVisitedPage }}
         >
-          <BrowserRouter>
-            <RouteTracker />
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <Navigate
-                    to={isLoggedIn ? lastVisitedPage : "/login"}
-                    replace
-                  />
-                }
-              />
-              <Route
-                path="/home"
-                element={<ProtectedRoute element={<Home />} />}
-              />
-              <Route
-                path="/projects"
-                element={<ProtectedRoute element={<Projects />} />}
-              />
-              <Route
-                path="/tasks"
-                element={<ProtectedRoute element={<Tasks />} />}
-              />
-              <Route
-                path="/chat"
-                element={<ProtectedRoute element={<Chat />} />}
-              />
-              <Route
-                path="/login"
-                element={
-                  <>
-                    <Header />
-                    <div className="min-h-screen w-full overflow-y-auto">
-                      {!isLoggedIn ? (
-                        <Login />
-                      ) : (
-                        <Navigate to={lastVisitedPage} />
-                      )}
-                    </div>
-                  </>
-                }
-              />
-              <Route
-                path="/signup"
-                element={
-                  <>
-                    <Header />
-                    <div className="min-h-screen w-full overflow-y-auto">
-                      {!isLoggedIn ? (
-                        <SignUp />
-                      ) : (
-                        <Navigate to={lastVisitedPage} />
-                      )}
-                    </div>
-                  </>
-                }
-              />
-            </Routes>
-          </BrowserRouter>
+          {TEST_MODE ? (
+            <div className={darkMode ? "dark" : ""}>
+              <TestComponent />
+            </div>
+          ) : (
+            <BrowserRouter>
+              <RouteTracker />
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <Navigate
+                      to={isLoggedIn ? lastVisitedPage : "/login"}
+                      replace
+                    />
+                  }
+                />
+                <Route
+                  path="/home"
+                  element={<ProtectedRoute element={<Home />} />}
+                />
+                <Route
+                  path="/projects"
+                  element={<ProtectedRoute element={<Projects />} />}
+                />
+                <Route
+                  path="/tasks"
+                  element={<ProtectedRoute element={<Tasks />} />}
+                />
+                <Route
+                  path="/chat"
+                  element={<ProtectedRoute element={<Chat />} />}
+                />
+                <Route
+                  path="/login"
+                  element={
+                    <>
+                      <Header />
+                      <div className="min-h-screen w-full overflow-y-auto">
+                        {!isLoggedIn ? (
+                          <Login />
+                        ) : (
+                          <Navigate to={lastVisitedPage} />
+                        )}
+                      </div>
+                    </>
+                  }
+                />
+                <Route
+                  path="/signup"
+                  element={
+                    <>
+                      <Header />
+                      <div className="min-h-screen w-full overflow-y-auto">
+                        {!isLoggedIn ? (
+                          <SignUp />
+                        ) : (
+                          <Navigate to={lastVisitedPage} />
+                        )}
+                      </div>
+                    </>
+                  }
+                />
+                {TEST_MODE && (
+                  <Route path="/test" element={<TestComponent />} />
+                )}
+              </Routes>
+            </BrowserRouter>
+          )}
         </NavigationContext.Provider>
       </AuthContext.Provider>
     </ThemeContext.Provider>
