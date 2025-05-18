@@ -19,7 +19,6 @@ module.exports = gql`
     endDate: String!
     status: String!
   }
-
   type Task {
     id: Int!
     project: String!
@@ -55,7 +54,6 @@ module.exports = gql`
     endDate: String!
     status: String!
   }
-
   input TaskInput {
     project: String!
     name: String!
@@ -83,6 +81,10 @@ module.exports = gql`
     deleteTask(id: ID!): Task
     updateTaskStatus(id: ID!, status: String!): Task
     deleteProject(id: ID!): String
-    sendMessage(senderEmail: String!, receiverEmail: String!, content: String!): Message
+    sendMessage(
+      senderEmail: String!
+      receiverEmail: String!
+      content: String!
+    ): Message
   }
 `;
