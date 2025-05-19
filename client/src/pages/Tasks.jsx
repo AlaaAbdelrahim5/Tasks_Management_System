@@ -1607,7 +1607,7 @@ const Tasks = () => {
       {/* Help Modal */}
       {showHelp && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm bg-opacity-50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm bg-opacity-50"
           onClick={() => setShowHelp(false)}
         >
           <div

@@ -1237,7 +1237,7 @@ const Projects = () => {
         )}
         {/* Delete confirmation modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm bg-opacity-60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm bg-opacity-60 p-4">
             <div
               className={`w-full max-w-md p-6 rounded-lg ${
                 darkMode ? "bg-gray-800" : "bg-white"
