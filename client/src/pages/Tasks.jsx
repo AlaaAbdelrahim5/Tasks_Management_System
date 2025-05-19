@@ -1607,7 +1607,7 @@ const Tasks = () => {
       {/* Help Modal */}
       {showHelp && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-sm bg-opacity-50 backdrop-blur-sm"
           onClick={() => setShowHelp(false)}
         >
           <div
@@ -1618,7 +1618,7 @@ const Tasks = () => {
             } p-8`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 ">
               <h2 className="text-3xl font-bold flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" className={`h-8 w-8 ${darkMode ? "text-blue-400" : "text-blue-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
