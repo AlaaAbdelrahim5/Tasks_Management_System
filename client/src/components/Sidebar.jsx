@@ -172,9 +172,7 @@ const Sidebar = () => {
                       : "text-gray-700"
                   }`}
                 onClick={() => {
-                  // Use React Router navigation hook
                   navigate("/home");
-                  // Close mobile menu if needed
                   if (windowWidth < 768) setIsMobileMenuOpen(false);
                 }}
                 onMouseEnter={() => setHoveredItem("home")}
@@ -331,7 +329,8 @@ const Sidebar = () => {
                 </span>
               </div>
             </nav>{" "}
-          </div>{" "}          {/* Footer information - fixed at bottom */}{" "}
+          </div>{" "}
+          {/* Footer information - fixed at bottom */}{" "}
           <div
             className={`p-4 mx-4 mb-17 rounded-lg shadow-md ${
               darkMode
@@ -369,11 +368,15 @@ const Sidebar = () => {
                 id="toggle-mode"
                 onClick={toggleDarkMode}
                 className={`p-2 rounded-full shadow-md hover:scale-110 transition-all duration-300 flex items-center justify-center border
-                  ${darkMode
-                    ? "bg-gray-700 hover:bg-gray-600 text-yellow-400 border-gray-600"
-                    : "bg-white hover:bg-blue-100 text-indigo-600 border-blue-200"}
+                  ${
+                    darkMode
+                      ? "bg-gray-700 hover:bg-gray-600 text-yellow-400 border-gray-600"
+                      : "bg-white hover:bg-blue-100 text-indigo-600 border-blue-200"
+                  }
                 `}
-                aria-label={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                aria-label={
+                  darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
+                }
               >
                 {darkMode ? <FaSun size={14} /> : <FaMoon size={14} />}
               </button>

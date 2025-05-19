@@ -47,15 +47,22 @@ const Login = () => {
         setLoading(false);
         return;
       }
-      const user = result.data.login;
-
-      sessionStorage.setItem("isCurrentSession", "true");
+      const user = result.data.login;      // Store user data in localStorage for persistence
       localStorage.setItem("user", JSON.stringify(user));
+      
+      // Set a flag in sessionStorage to identify the current browser session
+      // This helps determine if the browser was closed and reopened
+      sessionStorage.setItem("isCurrentSession", "true");
+      
+      // If "Remember me" is checked, store that preference
       if (staySignedIn) {
         localStorage.setItem("stayLoggedIn", "true");
       } else {
+        // If not checked, remove the preference
+        // User will be logged out when they close and reopen the browser
         localStorage.removeItem("stayLoggedIn");
       }
+      
       setIsLoggedIn(true);
       setCurrentUser(user);
       setLoading(false);
@@ -168,23 +175,24 @@ const Login = () => {
               required
               autoComplete="current-password"
             />
-          </div>
-          <div className="mb-4 flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="staySignedIn"
-              className="w-4 h-4 accent-blue-600 cursor-pointer transition-all duration-200"
-              checked={staySignedIn}
-              onChange={() => setStaySignedIn(!staySignedIn)}
-            />
-            <label
-              htmlFor="staySignedIn"
-              className={`text-sm py-3 cursor-pointer transition-colors duration-500 ${
-                darkMode ? "text-blue-200" : "text-blue-700"
-              }`}
-            >
-              Remember me (stay signed in)
-            </label>
+          </div>          <div className="mb-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="staySignedIn"
+                className="w-4 h-4 accent-blue-600 cursor-pointer transition-all duration-200"
+                checked={staySignedIn}
+                onChange={() => setStaySignedIn(!staySignedIn)}
+              />
+              <label
+                htmlFor="staySignedIn"
+                className={`text-sm py-3 cursor-pointer transition-colors duration-500 ${
+                  darkMode ? "text-blue-200" : "text-blue-700"
+                }`}
+              >
+                Remember me (stay signed in)
+              </label>
+            </div>
           </div>
           <button
             type="submit"

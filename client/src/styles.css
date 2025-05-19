@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 /* Dark mode styles */
 .dark {
     --bg-color: #1a202c;
@@ -28,6 +29,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -38,6 +40,7 @@
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -49,6 +52,7 @@
         opacity: 0;
         transform: translateX(20px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -56,18 +60,45 @@
 }
 
 @keyframes notificationAppear {
-    0% { opacity: 0; transform: translateY(-20px) scale(0.9); }
-    40% { opacity: 1; transform: translateY(0) scale(1.05); }
-    60% { transform: translateY(-7px) scale(1.02); }
-    80% { transform: translateY(0) scale(1); }
-    90% { transform: translateY(-3px); }
-    100% { transform: translateY(0); }
+    0% {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.9);
+    }
+
+    40% {
+        opacity: 1;
+        transform: translateY(0) scale(1.05);
+    }
+
+    60% {
+        transform: translateY(-7px) scale(1.02);
+    }
+
+    80% {
+        transform: translateY(0) scale(1);
+    }
+
+    90% {
+        transform: translateY(-3px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
 }
 
 @keyframes gentle-pulse {
-    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
 }
 
 /* Animation classes */
@@ -133,6 +164,7 @@ body {
         opacity: 0;
         transform: translateX(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -144,6 +176,7 @@ body {
         opacity: 0;
         transform: translateX(20px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -188,9 +221,17 @@ body {
 
 /* Close button animation */
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .close-chat-btn {
@@ -226,9 +267,17 @@ body {
 
 /* Mobile floating button pulse */
 @keyframes floatingPulse {
-    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
 }
 
 .mobile-chat-nav {
@@ -263,7 +312,8 @@ body {
 }
 
 .description-text {
-    text-overflow: ellipsis;    display: -webkit-box;
+    text-overflow: ellipsis;
+    display: -webkit-box;
     -webkit-line-clamp: 3;
     line-clamp: 3;
     -webkit-box-orient: vertical;
@@ -280,49 +330,57 @@ body {
     table-layout: fixed;
 }
 
-.tasks-table th, 
+.tasks-table th,
 .tasks-table td {
     text-align: center;
     vertical-align: middle;
 }
 
-.tasks-table th:nth-child(1), /* Task ID */
+.tasks-table th:nth-child(1),
+/* Task ID */
 .tasks-table td:nth-child(1) {
     width: 8%;
 }
 
-.tasks-table th:nth-child(2), /* Project */
+.tasks-table th:nth-child(2),
+/* Project */
 .tasks-table td:nth-child(2) {
     width: 10%;
 }
 
-.tasks-table th:nth-child(3), /* Name */
+.tasks-table th:nth-child(3),
+/* Name */
 .tasks-table td:nth-child(3) {
     width: 15%;
 }
 
-.tasks-table th:nth-child(4), /* Description */
+.tasks-table th:nth-child(4),
+/* Description */
 .tasks-table td:nth-child(4) {
     width: 20%;
     max-width: 20%;
 }
 
-.tasks-table th:nth-child(5), /* Student */
+.tasks-table th:nth-child(5),
+/* Student */
 .tasks-table td:nth-child(5) {
     width: 12%;
 }
 
-.tasks-table th:nth-child(6), /* Status */
+.tasks-table th:nth-child(6),
+/* Status */
 .tasks-table td:nth-child(6) {
     width: 12%;
 }
 
-.tasks-table th:nth-child(7), /* Due Date */
+.tasks-table th:nth-child(7),
+/* Due Date */
 .tasks-table td:nth-child(7) {
     width: 12%;
 }
 
-.tasks-table th:nth-child(8), /* Actions */
+.tasks-table th:nth-child(8),
+/* Actions */
 .tasks-table td:nth-child(8) {
     width: 11%;
 }
@@ -346,7 +404,8 @@ body {
     font-size: 0.75rem;
     transition: all 0.2s ease;
     border-radius: 0 0 4px 4px;
-    display: block; /* Ensure it's always visible */
+    display: block;
+    /* Ensure it's always visible */
     cursor: pointer;
 }
 

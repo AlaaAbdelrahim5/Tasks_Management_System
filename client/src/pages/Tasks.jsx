@@ -15,9 +15,6 @@ import AddTaskForm from "../components/AddTaskForm";
 import DashboardChart from "../components/DashboardChart";
 
 const Tasks = () => {
-  // Add console logs for debugging 
-  console.log("Tasks component is rendering");
-  
   const { darkMode } = useContext(ThemeContext);
   const [projects, setProjects] = useState([]);
   const [students, setStudents] = useState([]);

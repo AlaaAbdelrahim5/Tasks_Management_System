@@ -9,7 +9,7 @@ const Chat = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [newMessageNotification, setNewMessageNotification] = useState(null);
   const [unreadMessages, setUnreadMessages] = useState({});
-  const [latestMessageTimestamps, setLatestMessageTimestamps] = useState({}); // Add state for timestamps
+  const [latestMessageTimestamps, setLatestMessageTimestamps] = useState({});
   const [wsReady, setWsReady] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
@@ -92,17 +92,18 @@ const Chat = () => {
 
   // Re-bind WS listener on chat change (ensures fresh selectedStudent)
   useEffect(() => {
-    if (!wsRef.current) return; 
-    const ws = wsRef.current; 
-    const listener = (evt) => { 
-      const data = JSON.parse(evt.data); 
-      if (data.type === "message") handleIncomingMessage(data.message); 
-    }; 
-    ws.addEventListener("message", listener); 
-    return () => ws.removeEventListener("message", listener); 
-  }, [selectedStudent, students]); 
+    if (!wsRef.current) return;
+    const ws = wsRef.current;
+    const listener = (evt) => {
+      const data = JSON.parse(evt.data);
+      if (data.type === "message") handleIncomingMessage(data.message);
+    };
+    ws.addEventListener("message", listener);
+    return () => ws.removeEventListener("message", listener);
+  }, [selectedStudent, students]);
 
-  // Set up WebSocket connection  // Function to fetch latest message timestamp for a user
+  // Set up WebSocket connection
+  // Function to fetch latest message timestamp for a user
   const fetchLatestMessageTimestamp = async (otherUser) => {
     try {
       const res = await fetch("http://localhost:4000/graphql", {
@@ -439,19 +440,13 @@ const Chat = () => {
       ...prev,
       [selectedStudent.email]: 0,
     }));
-
-    // clear unread count
-    setUnreadMessages((prev) => ({
-      ...prev,
-      [selectedStudent.email]: 0,
-    }));
   }, [selectedStudent]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-  
+
   const fetchMessages = async () => {
     if (!selectedStudent) return;
 
@@ -594,21 +589,32 @@ const Chat = () => {
     audio.play().catch((e) => console.log("Audio play failed:", e));
   }; // Handle incoming WebSocket messages
 
-    // Incoming message handler using selectedChatEmailRef
-const handleIncomingMessage = (message) => {
+  // Incoming message handler using selectedChatEmailRef
+  const handleIncomingMessage = (message) => {
     const otherEmail =
-      message.senderEmail === user.email ? message.receiverEmail : message.senderEmail;
+      message.senderEmail === user.email
+        ? message.receiverEmail
+        : message.senderEmail;
 
     // Update sidebar timestamp
-    setLatestMessageTimestamps(prev => ({ ...prev, [otherEmail]: message.timestamp }));
+    setLatestMessageTimestamps((prev) => ({
+      ...prev,
+      [otherEmail]: message.timestamp,
+    }));
 
     // Bump unread if not current chat
-    if (message.senderEmail !== user.email && selectedChatEmailRef.current !== otherEmail) {
-      setUnreadMessages(u => ({ ...u, [otherEmail]: (u[otherEmail] || 0) + 1 }));
+    if (
+      message.senderEmail !== user.email &&
+      selectedChatEmailRef.current !== otherEmail
+    ) {
+      setUnreadMessages((u) => ({
+        ...u,
+        [otherEmail]: (u[otherEmail] || 0) + 1,
+      }));
       playNotificationSound();
-      
+
       // Find the sender in the students list to get their username
-      const sender = students.find(s => s.email === message.senderEmail);
+      const sender = students.find((s) => s.email === message.senderEmail);
       if (sender) {
         // Show notification with the sender's name and message content
         showNotification(sender.username, message.content);
@@ -617,12 +623,14 @@ const handleIncomingMessage = (message) => {
 
     // If message is for current chat, append immediately with dedupe of temp
     if (selectedChatEmailRef.current === otherEmail) {
-      setMessages(prev => {
+      setMessages((prev) => {
         // remove any temp message matching content
-        const cleaned = prev.filter(m => !(m.id.startsWith("temp-") && m.content === message.content));
+        const cleaned = prev.filter(
+          (m) => !(m.id.startsWith("temp-") && m.content === message.content)
+        );
         // remove any existing same-id message
-        const withoutDup = cleaned.filter(m => m.id !== message.id);
-        return [...withoutDup, message]; 
+        const withoutDup = cleaned.filter((m) => m.id !== message.id);
+        return [...withoutDup, message];
       });
       scrollToBottom();
     }
@@ -631,7 +639,7 @@ const handleIncomingMessage = (message) => {
   // Handle the notification click to switch to conversation
   const handleNotificationClick = (email) => {
     // Find the student with this email
-    const student = students.find(s => s.email === email);
+    const student = students.find((s) => s.email === email);
     if (student) {
       // Select this student to open the conversation
       setSelectedStudent({
@@ -641,9 +649,9 @@ const handleIncomingMessage = (message) => {
       // Clear the notification
       setNewMessageNotification(null);
       // Reset unread count
-      setUnreadMessages(prev => ({
+      setUnreadMessages((prev) => ({
         ...prev,
-        [email]: 0
+        [email]: 0,
       }));
     }
   };
@@ -651,17 +659,18 @@ const handleIncomingMessage = (message) => {
   // Show a notification with proper message preview
   const showNotification = (sender, message, unreadCount = 1) => {
     // Truncate message if it's too long
-    const preview = message.length > 50 ? message.substring(0, 47) + '...' : message;
-    
+    const preview =
+      message.length > 50 ? message.substring(0, 47) + "..." : message;
+
     // Set notification state
     setNewMessageNotification({
       sender,
       preview,
       timestamp: new Date(),
       unreadCount,
-      senderEmail: students.find(s => s.username === sender)?.email || ''
+      senderEmail: students.find((s) => s.username === sender)?.email || "",
     });
-    
+
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
       setNewMessageNotification(null);
@@ -780,9 +789,7 @@ const handleIncomingMessage = (message) => {
     return (
       <div
         className={`px-4 py-2 text-xs flex items-center justify-between ${
-          darkMode
-            ? "bg-gray-800 text-amber-300"
-            : "bg-gray-100 text-amber-600"
+          darkMode ? "bg-gray-800 text-amber-300" : "bg-gray-100 text-amber-600"
         } border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}
       >
         <div className="flex items-center">
@@ -1055,7 +1062,6 @@ const handleIncomingMessage = (message) => {
               </div>
             )}
           </div>
-
           {/* Messages area - scrollable */}
           <div
             ref={messageContainerRef}
@@ -1176,7 +1182,6 @@ const handleIncomingMessage = (message) => {
               </div>
             )}
           </div>
-
           {/* Typing indicator */}
           {isTyping && selectedStudent && (
             <div
@@ -1200,10 +1205,8 @@ const handleIncomingMessage = (message) => {
               </div>
             </div>
           )}
-
           {/* WebSocket connection status */}
           {!wsReady && selectedStudent && renderConnectionStatus()}
-
           {/* Message input - fixed at bottom */}
           <div
             className={`flex flex-col border-t-2 ${
@@ -1268,57 +1271,91 @@ const handleIncomingMessage = (message) => {
                 Send
               </button>
             </div>
-          </div>        </div>
-      </div>      {/* New message notification popup */}
+          </div>{" "}
+        </div>
+      </div>{" "}
+      {/* New message notification popup */}
       {newMessageNotification && (
-        <div 
-          onClick={() => handleNotificationClick(newMessageNotification.senderEmail)}
+        <div
+          onClick={() =>
+            handleNotificationClick(newMessageNotification.senderEmail)
+          }
           className={`fixed top-20 right-5 p-4 rounded-lg shadow-lg cursor-pointer transform transition-all duration-300 animate-bounce-once ${
-            darkMode 
-              ? 'bg-gray-800 text-white border border-blue-600 shadow-blue-600/20' 
-              : 'bg-white text-gray-800 border border-blue-300 shadow-blue-300/20'
+            darkMode
+              ? "bg-gray-800 text-white border border-blue-600 shadow-blue-600/20"
+              : "bg-white text-gray-800 border border-blue-300 shadow-blue-300/20"
           } max-w-xs hover:scale-105 transition-transform`}
           style={{
             zIndex: 1000,
-            animation: `notificationAppear 1s cubic-bezier(0.22, 1, 0.36, 1) forwards, gentle-pulse 2s infinite`
+            animation: `notificationAppear 1s cubic-bezier(0.22, 1, 0.36, 1) forwards, gentle-pulse 2s infinite`,
           }}
         >
           <div className="flex items-start">
-            <div className={`relative w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-              darkMode ? 'bg-blue-600' : 'bg-blue-100'
-            }`}>
+            <div
+              className={`relative w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+                darkMode ? "bg-blue-600" : "bg-blue-100"
+              }`}
+            >
               {/* Notification icon */}
-              <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${darkMode ? 'text-white' : 'text-blue-600'}`} viewBox="0 0 20 20" fill="currentColor">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-5 w-5 ${
+                  darkMode ? "text-white" : "text-blue-600"
+                }`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
                 <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
               </svg>
-              
+
               {/* Small dot indicating new message */}
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center animate-pulse">
-                !              </span>
+                !{" "}
+              </span>
             </div>
             <div className="flex-1">
               <div className="flex items-center mb-1">
                 <p className="font-bold">{newMessageNotification.sender}</p>
-                <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
-                  darkMode ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'
-                }`}>
+                <span
+                  className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                    darkMode
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
+                >
                   New message
                 </span>
               </div>
-              <p className="text-sm opacity-80">{newMessageNotification.preview}</p>
+              <p className="text-sm opacity-80">
+                {newMessageNotification.preview}
+              </p>
               <p className="text-xs mt-1 opacity-70">
-                {new Date(newMessageNotification.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                {new Date(newMessageNotification.timestamp).toLocaleTimeString(
+                  [],
+                  { hour: "2-digit", minute: "2-digit" }
+                )}
               </p>
             </div>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 setNewMessageNotification(null);
               }}
-              className={`ml-3 p-1 rounded-full ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              className={`ml-3 p-1 rounded-full ${
+                darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+              }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
           </div>

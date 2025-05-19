@@ -83,7 +83,7 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchDashboardStats(); // ✅ this must be called here
+    fetchDashboardStats();
     setDateTime(formatDateTime());
     const interval = setInterval(() => {
       setDateTime(formatDateTime());

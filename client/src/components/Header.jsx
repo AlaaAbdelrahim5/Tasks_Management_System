@@ -21,16 +21,16 @@ const Header = () => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  const logout = () => {
-    // Remember the last page before logging out (but don't navigate there)
+  }, []);  const logout = () => {
     updateLastVisitedPage("/home");
-
+    
     localStorage.removeItem("user");
     localStorage.removeItem("stayLoggedIn");
     sessionStorage.removeItem("isCurrentSession");
+    
     setIsLoggedIn(false);
     setCurrentUser(null);
+    
     navigate("/login");
   };
 

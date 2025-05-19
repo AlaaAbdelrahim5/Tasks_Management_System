@@ -19,6 +19,7 @@ module.exports = gql`
     endDate: String!
     status: String!
   }
+
   type Task {
     id: Int!
     project: String!
@@ -54,6 +55,7 @@ module.exports = gql`
     endDate: String!
     status: String!
   }
+
   input TaskInput {
     project: String!
     name: String!
@@ -62,6 +64,7 @@ module.exports = gql`
     status: String!
     dueDate: String!
   }
+    
   type Query {
     getProjects: [Project]
     getStudents: [User]
