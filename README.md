@@ -6,7 +6,7 @@
 [![GraphQL](https://img.shields.io/badge/GraphQL-E10098?style=flat&logo=graphql&logoColor=white)](https://graphql.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=flat&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 
-A modern Single Page Application (SPA) for task management, featuring a React frontend, Node.js backend, and GraphQL API.
+A modern Single Page Application for task management, featuring a React frontend, Node.js backend, and GraphQL API.
 
 ## Table of Contents
 - [Project Overview](#project-overview)
